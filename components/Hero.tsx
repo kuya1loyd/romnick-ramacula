@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { MapPin, ArrowDown, ExternalLink } from "lucide-react";
+import { MapPin, ArrowDown, ExternalLink, User } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -87,19 +87,32 @@ export default function Hero() {
               classroom solutions for the future of elementary learning.
             </p>
 
-            {/* Black location pill with live pulsing dot */}
-            <motion.div
-              whileHover={{ scale: 1.04 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black text-white text-xs font-semibold shadow-md cursor-default"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              <MapPin className="w-3.5 h-3.5 text-white" />
-              <span>NEMSU - LIANGA CAMPUS</span>
-            </motion.div>
+            {/* Info Pills: NEMSU Campus & Instructor */}
+            <div className="mt-4 flex flex-wrap items-center gap-2.5">
+              {/* Black location pill with live pulsing dot */}
+              <motion.div
+                whileHover={{ scale: 1.04 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black text-white text-xs font-semibold shadow-md cursor-default"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <MapPin className="w-3.5 h-3.5 text-white" />
+                <span>NEMSU - LIANGA CAMPUS</span>
+              </motion.div>
+
+              {/* Instructor badge */}
+              <motion.div
+                whileHover={{ scale: 1.04 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-bold shadow-xs cursor-default"
+              >
+                <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Instructor: Kerstan Isaac Requiza</span>
+              </motion.div>
+            </div>
           </motion.div>
 
           {/* Right Side: ONLY Facebook button as requested */}

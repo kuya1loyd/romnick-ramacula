@@ -11,6 +11,8 @@ import {
   Heart,
   Compass,
   Laptop,
+  GraduationCap,
+  Award,
 } from "lucide-react";
 
 export default function About() {
@@ -121,6 +123,15 @@ export default function About() {
                 Proficient in modern pedagogical methodologies, including <strong className="text-slate-950 font-black">Technology for Teaching and Learning (TTL)</strong>, Interactive Digital Pedagogy, Lesson Planning, and Student-Centered Classroom Engagement under <strong className="text-slate-950 font-black">Instructor Kerstan Isaac Requiza</strong>.
               </p>
             </div>
+            <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-slate-700 font-bold">
+                <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Instructor: Kerstan Isaac Requiza</span>
+              </div>
+              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                TTL Advisor
+              </span>
+            </div>
           </motion.div>
 
           <motion.div
@@ -141,6 +152,35 @@ export default function About() {
             </div>
           </motion.div>
         </div>
+
+        {/* Academic Mentorship & Instructor Spotlight */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-16 p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-white border border-indigo-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-13 h-13 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md">
+              <User className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-bold text-indigo-600 tracking-wider uppercase mb-0.5">
+                <span>Course Instructor & Academic Advisor</span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Kerstan Isaac Requiza</span>
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Technology for Teaching and Learning (TTL) • NEMSU - Lianga Campus
+              </p>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-indigo-200 text-indigo-700 text-xs font-bold shadow-2xs shrink-0">
+            <GraduationCap className="w-4 h-4 text-indigo-600" />
+            <span>BEEd-2C Coursework</span>
+          </div>
+        </motion.div>
 
         {/* Core Teaching Competencies */}
         <div>

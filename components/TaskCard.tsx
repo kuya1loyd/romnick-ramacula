@@ -12,6 +12,7 @@ import {
   Globe,
   Sparkles,
   Trash2,
+  User,
 } from "lucide-react";
 import { Task } from "@/data/tasks";
 
@@ -130,9 +131,12 @@ export default function TaskCard({
       {/* Bottom Metadata & Action Buttons */}
       <div className="pt-3 border-t border-black/5 flex flex-col gap-3">
         {/* Instructor & Date info */}
-        <div className="flex items-center justify-between text-[11px] text-slate-600 font-semibold">
-          <span className="truncate">Instructor: {task.instructor}</span>
-          <span className="shrink-0 text-slate-500 font-medium">{task.uploadDate}</span>
+        <div className="flex items-center justify-between text-xs font-semibold">
+          <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate max-w-[180px]">
+            <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="truncate">{task.instructor}</span>
+          </div>
+          <span className="shrink-0 text-[11px] text-slate-500 font-medium">{task.uploadDate}</span>
         </div>
 
         {/* Action Button: VISIT WEBSITE ↗ or VIEW PDF ↗ */}
