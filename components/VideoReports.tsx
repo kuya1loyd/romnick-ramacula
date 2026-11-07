@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Video, Play, Calendar, User, Plus, ExternalLink, Trash2, Clapperboard } from "lucide-react";
+import { Video, Play, Calendar, User, Plus, ExternalLink, Trash2, Clapperboard, Smartphone, Monitor } from "lucide-react";
 import UploadVideoModal, { VideoReportItem } from "./UploadVideoModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
+import VideoPlayerModal from "./VideoPlayerModal";
+import { getVideoFromDb, deleteVideoFromDb } from "@/lib/videoDb";
 
 export default function VideoReports() {
   const [reports, setReports] = useState<VideoReportItem[]>([]);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<VideoReportItem | null>(null);
+  const [activePlayingReport, setActivePlayingReport] = useState<VideoReportItem | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
   // Load from localStorage on mount
@@ -41,9 +44,22 @@ export default function VideoReports() {
     setReports(updated);
     try {
       localStorage.setItem("romnick_video_reports", JSON.stringify(updated));
+      deleteVideoFromDb(id);
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // Play video: fetch from IndexedDB if needed, then open player
+  const handlePlayVideo = async (report: VideoReportItem) => {
+    if (!report.videoUrl && report.isLocalFile) {
+      const dbData = await getVideoFromDb(report.id);
+      if (dbData) {
+        setActivePlayingReport({ ...report, videoUrl: dbData });
+        return;
+      }
+    }
+    setActivePlayingReport(report);
   };
 
   return (
@@ -78,10 +94,10 @@ export default function VideoReports() {
             transition={{ delay: 0.2 }}
             className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed"
           >
-            Upload and showcase recorded academic presentations, teaching demonstrations, and video logs for BEEd coursework.
+            Upload and showcase recorded academic presentations, teaching demonstrations, and video logs directly from your PC or cellphone.
           </motion.p>
 
-          {/* Action Upload Button (Only shown when items exist to prevent duplicate buttons) */}
+          {/* Action Upload Button */}
           {hasLoaded && reports.length > 0 && (
             <div className="mt-6 flex justify-center">
               <button
@@ -95,7 +111,7 @@ export default function VideoReports() {
           )}
         </div>
 
-        {/* Video Reports Display Grid or Clean Empty State */}
+        {/* Video Reports Display Grid */}
         {hasLoaded && reports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {reports.map((report, index) => (
@@ -106,11 +122,23 @@ export default function VideoReports() {
                 transition={{ delay: index * 0.1 }}
                 className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-xs hover:shadow-lg hover:border-indigo-400 transition-all flex flex-col justify-between group"
               >
-                {/* Video Screen Preview */}
-                <div className="relative aspect-video bg-gradient-to-tr from-slate-900 to-indigo-950 flex items-center justify-center p-6 text-center overflow-hidden">
+                {/* Video Screen Preview & Clickable Play Area */}
+                <div
+                  onClick={() => handlePlayVideo(report)}
+                  className="relative aspect-video bg-gradient-to-tr from-slate-900 to-indigo-950 flex items-center justify-center p-6 text-center overflow-hidden cursor-pointer group/screen"
+                >
                   <div className="absolute inset-0 bg-radial from-indigo-500/20 via-transparent to-black/60 pointer-events-none" />
+                  
+                  {/* Local Device badge */}
+                  {report.isLocalFile && (
+                    <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-full bg-indigo-950/80 border border-indigo-400/40 text-indigo-200 text-[10px] font-bold flex items-center gap-1.5 backdrop-blur-xs">
+                      <Smartphone className="w-3 h-3" />
+                      <span>Device Video</span>
+                    </div>
+                  )}
+
                   <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-indigo-600 transition-all shadow-lg mb-2">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white group-hover/screen:scale-115 group-hover/screen:bg-indigo-600 transition-all shadow-lg mb-2">
                       <Play className="w-5 h-5 fill-white ml-0.5" />
                     </div>
                     <span className="text-[11px] font-bold text-slate-200 tracking-wider uppercase">
@@ -120,7 +148,10 @@ export default function VideoReports() {
 
                   {/* Delete Button (Opens Confirmation Modal) */}
                   <button
-                    onClick={() => setReportToDelete(report)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReportToDelete(report);
+                    }}
                     className="absolute top-3 right-3 p-1.5 rounded-full bg-black/50 text-white/70 hover:text-rose-400 hover:bg-black/80 transition-colors z-20 cursor-pointer"
                     title="Remove Video"
                   >
@@ -139,7 +170,10 @@ export default function VideoReports() {
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors mb-2">
+                    <h3
+                      onClick={() => handlePlayVideo(report)}
+                      className="text-base font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors mb-2 cursor-pointer line-clamp-2"
+                    >
                       {report.title}
                     </h3>
 
@@ -149,21 +183,19 @@ export default function VideoReports() {
                   </div>
 
                   <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{report.instructor}</span>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium truncate max-w-[170px]">
+                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{report.instructor}</span>
                     </div>
 
                     {report.videoUrl ? (
-                      <a
-                        href={report.videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800"
+                      <button
+                        onClick={() => handlePlayVideo(report)}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
                       >
+                        <Play className="w-3 h-3 fill-indigo-600" />
                         <span>Watch Video</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      </button>
                     ) : (
                       <span className="text-[11px] font-semibold text-slate-400">
                         Presentation Log
@@ -175,7 +207,7 @@ export default function VideoReports() {
             ))}
           </div>
         ) : (
-          /* Clean Inviting Empty State (No Dummy Items) */
+          /* Clean Inviting Empty State */
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -188,14 +220,14 @@ export default function VideoReports() {
               No Video Reports Uploaded Yet
             </h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
-              Click the button below to upload your student-led video presentations, teaching walkthroughs, or YouTube links.
+              Upload video presentations and teaching demonstrations directly from your PC or cellphone files, or paste a link.
             </p>
             <button
               onClick={() => setIsUploadOpen(true)}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Upload Your First Video Report</span>
+              <span>Upload Video from PC or Phone</span>
             </button>
           </motion.div>
         )}
@@ -206,6 +238,12 @@ export default function VideoReports() {
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onAddVideo={handleAddVideo}
+      />
+
+      {/* Video Player Modal */}
+      <VideoPlayerModal
+        report={activePlayingReport}
+        onClose={() => setActivePlayingReport(null)}
       />
 
       {/* Delete Confirmation Modal */}
