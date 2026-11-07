@@ -56,19 +56,8 @@ export default function VideoReports() {
     }
   };
 
-  // Play video: fetch from IndexedDB if local file, then open player
-  const handlePlayVideo = async (report: VideoReportItem) => {
-    if (report.videoUrl) {
-      setActivePlayingReport(report);
-      return;
-    }
-    if (report.isLocalFile) {
-      const dbUrl = await getVideoUrlFromDb(report.id);
-      if (dbUrl) {
-        setActivePlayingReport({ ...report, videoUrl: dbUrl });
-        return;
-      }
-    }
+  // Play video: open VideoPlayerModal
+  const handlePlayVideo = (report: VideoReportItem) => {
     setActivePlayingReport(report);
   };
 
@@ -132,42 +121,15 @@ export default function VideoReports() {
                 transition={{ delay: index * 0.1 }}
                 className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-xs hover:shadow-lg hover:border-indigo-400 transition-all flex flex-col justify-between group"
               >
-                {/* Video Screen Preview & Clickable Play Area */}
-                <div
-                  onClick={() => handlePlayVideo(report)}
-                  className="relative aspect-video bg-gradient-to-tr from-slate-900 to-indigo-950 flex items-center justify-center p-6 text-center overflow-hidden cursor-pointer group/screen"
-                >
-                  <div className="absolute inset-0 bg-radial from-indigo-500/20 via-transparent to-black/60 pointer-events-none" />
-                  
-                  {/* Local Device badge */}
-                  {report.isLocalFile && (
-                    <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-full bg-indigo-950/80 border border-indigo-400/40 text-indigo-200 text-[10px] font-bold flex items-center gap-1.5 backdrop-blur-xs">
-                      <Smartphone className="w-3 h-3" />
-                      <span>Device Video</span>
-                    </div>
-                  )}
-
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white group-hover/screen:scale-115 group-hover/screen:bg-indigo-600 transition-all shadow-lg mb-2">
-                      <Play className="w-5 h-5 fill-white ml-0.5" />
-                    </div>
-                    <span className="text-[11px] font-bold text-slate-200 tracking-wider uppercase">
-                      {report.duration}
-                    </span>
-                  </div>
-
-                  {/* Delete Button (Opens Confirmation Modal) */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setReportToDelete(report);
-                    }}
-                    className="absolute top-3 right-3 p-1.5 rounded-full bg-black/50 text-white/70 hover:text-rose-400 hover:bg-black/80 transition-colors z-20 cursor-pointer"
-                    title="Remove Video"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {/* Video Screen Preview & Clickable Play Area with Thumbnail Frame */}
+                <VideoCardScreen
+                  report={report}
+                  onPlay={() => handlePlayVideo(report)}
+                  onDelete={(e) => {
+                    e.stopPropagation();
+                    setReportToDelete(report);
+                  }}
+                />
 
                 {/* Content */}
                 <div className="p-6 flex-1 flex flex-col justify-between">
@@ -200,6 +162,7 @@ export default function VideoReports() {
 
                     {report.videoUrl || report.isLocalFile ? (
                       <button
+                        type="button"
                         onClick={() => handlePlayVideo(report)}
                         className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
                       >
@@ -270,5 +233,95 @@ export default function VideoReports() {
         onClose={() => setReportToDelete(null)}
       />
     </section>
+  );
+}
+
+// Subcomponent: Video Screen Preview displaying real video thumbnail frame or live video frame
+function VideoCardScreen({
+  report,
+  onPlay,
+  onDelete,
+}: {
+  report: VideoReportItem;
+  onPlay: () => void;
+  onDelete: (e: React.MouseEvent) => void;
+}) {
+  const [localVideoUrl, setLocalVideoUrl] = useState<string>("");
+
+  useEffect(() => {
+    let active = true;
+    if (report.isLocalFile && !report.thumbnail) {
+      getVideoUrlFromDb(report.id).then((url) => {
+        if (active && url) {
+          setLocalVideoUrl(url);
+        }
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, [report.id, report.isLocalFile, report.thumbnail]);
+
+  return (
+    <div
+      onClick={onPlay}
+      className="relative aspect-video bg-gradient-to-tr from-slate-900 to-indigo-950 flex items-center justify-center p-6 text-center overflow-hidden cursor-pointer group/screen"
+    >
+      {/* 1. Real Video Thumbnail Image if available */}
+      {report.thumbnail ? (
+        <div className="absolute inset-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={report.thumbnail}
+            alt={report.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover/screen:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/30 group-hover/screen:via-black/20 transition-colors" />
+        </div>
+      ) : localVideoUrl ? (
+        /* 2. Direct Video Frame if local file and no thumbnail */
+        <div className="absolute inset-0">
+          <video
+            src={localVideoUrl}
+            preload="metadata"
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-85 transition-transform duration-500 group-hover/screen:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/30 group-hover/screen:via-black/20 transition-colors" />
+        </div>
+      ) : (
+        /* 3. Subtle background radial glow */
+        <div className="absolute inset-0 bg-radial from-indigo-500/20 via-transparent to-black/60 pointer-events-none" />
+      )}
+
+      {/* Local Device badge */}
+      {report.isLocalFile && (
+        <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-full bg-black/60 border border-white/20 text-white text-[10px] font-bold flex items-center gap-1.5 backdrop-blur-md shadow-sm">
+          <Smartphone className="w-3 h-3 text-emerald-400" />
+          <span>Device Video</span>
+        </div>
+      )}
+
+      {/* Floating Play Button */}
+      <div className="relative z-10 flex flex-col items-center">
+        <div className="w-13 h-13 rounded-full bg-white/25 backdrop-blur-md border border-white/40 flex items-center justify-center text-white group-hover/screen:scale-115 group-hover/screen:bg-indigo-600 transition-all shadow-xl mb-2">
+          <Play className="w-6 h-6 fill-white ml-0.5" />
+        </div>
+        <span className="text-[11px] font-bold text-white drop-shadow-md tracking-wider uppercase">
+          {report.duration}
+        </span>
+      </div>
+
+      {/* Delete Button (Opens Confirmation Modal) */}
+      <button
+        type="button"
+        onClick={onDelete}
+        className="absolute top-3 right-3 p-1.5 rounded-full bg-black/60 text-white/80 hover:text-rose-400 hover:bg-black/90 transition-colors z-30 cursor-pointer backdrop-blur-md"
+        title="Remove Video"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
   );
 }

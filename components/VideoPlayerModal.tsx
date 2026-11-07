@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Video, ExternalLink, Calendar, User } from "lucide-react";
+import { X, Video, ExternalLink, Calendar, User, Loader2, Play } from "lucide-react";
 import { VideoReportItem } from "./UploadVideoModal";
+import { getVideoUrlFromDb } from "@/lib/videoDb";
 
 interface VideoPlayerModalProps {
   report: VideoReportItem | null;
@@ -11,6 +12,9 @@ interface VideoPlayerModalProps {
 }
 
 export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalProps) {
+  const [resolvedUrl, setResolvedUrl] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
   // Close on Escape & lock body scroll
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -26,16 +30,61 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
     };
   }, [report, onClose]);
 
+  // Resolve video URL: check IndexedDB for device videos, or fallback to report.videoUrl
+  useEffect(() => {
+    let isCancelled = false;
+    let localBlobUrl = "";
+
+    const loadVideo = async () => {
+      if (!report) {
+        setResolvedUrl("");
+        return;
+      }
+      setIsLoading(true);
+
+      // If local file, query IndexedDB for fresh blob
+      if (report.isLocalFile) {
+        try {
+          const dbUrl = await getVideoUrlFromDb(report.id);
+          if (!isCancelled && dbUrl) {
+            localBlobUrl = dbUrl;
+            setResolvedUrl(dbUrl);
+            setIsLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn("Could not retrieve video from IndexedDB:", err);
+        }
+      }
+
+      // If report already has a videoUrl (data URL, web link, or live blob)
+      if (!isCancelled && report.videoUrl) {
+        setResolvedUrl(report.videoUrl);
+      } else if (!isCancelled) {
+        setResolvedUrl("");
+      }
+      setIsLoading(false);
+    };
+
+    loadVideo();
+
+    return () => {
+      isCancelled = true;
+      if (localBlobUrl && localBlobUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(localBlobUrl);
+      }
+    };
+  }, [report]);
+
   // Check if URL is YouTube
   const youtubeEmbedUrl = useMemo(() => {
-    if (!report?.videoUrl) return null;
-    const url = report.videoUrl;
-    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    if (ytMatch && ytMatch[1]) {
-      return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+    if (!resolvedUrl) return null;
+    const match = resolvedUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (match && match[1]) {
+      return `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
     }
     return null;
-  }, [report]);
+  }, [resolvedUrl]);
 
   if (!report) return null;
 
@@ -86,7 +135,12 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
 
           {/* Video Container */}
           <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
-            {youtubeEmbedUrl ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center gap-2 text-slate-400">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                <span className="text-xs">Loading presentation video...</span>
+              </div>
+            ) : youtubeEmbedUrl ? (
               <iframe
                 src={youtubeEmbedUrl}
                 title={report.title}
@@ -94,9 +148,10 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
                 allowFullScreen
                 className="w-full h-full border-0"
               />
-            ) : report.videoUrl ? (
+            ) : resolvedUrl ? (
               <video
-                src={report.videoUrl}
+                key={resolvedUrl}
+                src={resolvedUrl}
                 controls
                 autoPlay
                 playsInline
@@ -106,7 +161,7 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
               </video>
             ) : (
               <div className="text-center p-6 text-slate-400 text-xs">
-                No video source provided for this presentation.
+                Video source was not found. Please try uploading the video again.
               </div>
             )}
           </div>
@@ -133,4 +188,3 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
     </AnimatePresence>
   );
 }
-

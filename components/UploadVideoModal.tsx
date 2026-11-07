@@ -17,6 +17,53 @@ export interface VideoReportItem {
   fileName?: string;
   fileSize?: string;
   isLocalFile?: boolean;
+  thumbnail?: string;
+}
+
+// Generate thumbnail snapshot from video file
+function generateVideoThumbnail(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    try {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.muted = true;
+      video.playsInline = true;
+      const url = URL.createObjectURL(file);
+      video.src = url;
+
+      video.onloadeddata = () => {
+        video.currentTime = Math.min(0.5, (video.duration || 1) / 2);
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 480;
+          canvas.height = 270;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(video, 0, 0, 480, 270);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          URL.revokeObjectURL(url);
+          resolve(dataUrl);
+        } catch {
+          URL.revokeObjectURL(url);
+          resolve("");
+        }
+      };
+
+      video.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve("");
+      };
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        resolve("");
+      }, 2500);
+    } catch {
+      resolve("");
+    }
+  });
 }
 
 interface UploadVideoModalProps {
@@ -45,6 +92,7 @@ export default function UploadVideoModal({
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
   const [fileSizeStr, setFileSizeStr] = useState<string>("");
+  const [thumbnail, setThumbnail] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -77,11 +125,6 @@ export default function UploadVideoModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Revoke previous blob URL if exists
-    if (previewUrl && previewUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(previewUrl);
-    }
-
     // Instant object URL - 0ms delay, no memory freeze!
     const objectUrl = URL.createObjectURL(file);
     setSelectedFile(file);
@@ -98,6 +141,11 @@ export default function UploadVideoModal({
       const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
       setTitle(cleanName);
     }
+
+    // Automatically generate first-frame thumbnail for cover display
+    generateVideoThumbnail(file).then((thumb) => {
+      if (thumb) setThumbnail(thumb);
+    });
   };
 
   const handleRemoveFile = () => {
@@ -108,6 +156,7 @@ export default function UploadVideoModal({
     setPreviewUrl("");
     setFileName("");
     setFileSizeStr("");
+    setThumbnail("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -137,16 +186,24 @@ export default function UploadVideoModal({
       fileName: sourceType === "device" ? fileName : undefined,
       fileSize: sourceType === "device" ? fileSizeStr : undefined,
       isLocalFile: sourceType === "device",
+      thumbnail: thumbnail || undefined,
     };
 
     onAddVideo(newReport);
     onClose();
 
-    // Reset Form
+    // Reset Form state without revoking the newly submitted object URL
     setTitle("");
     setDescription("");
     setVideoUrl("");
-    handleRemoveFile();
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setFileName("");
+    setFileSizeStr("");
+    setThumbnail("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
