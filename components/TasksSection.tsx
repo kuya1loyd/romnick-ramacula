@@ -18,14 +18,26 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Load custom tasks from localStorage
+  // Load tasks from localStorage (defaults to tasksData on first visit)
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("romnick_user_tasks");
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const savedActive = localStorage.getItem("romnick_active_tasks");
+      if (savedActive !== null) {
+        const parsed = JSON.parse(savedActive);
+        if (Array.isArray(parsed)) {
+          setTasks(parsed);
+          return;
+        }
+      }
+      // Migrate from previous key if present
+      const oldSaved = localStorage.getItem("romnick_user_tasks");
+      if (oldSaved) {
+        const parsed = JSON.parse(oldSaved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setTasks([...tasksData, ...parsed]);
+          const combined = [...tasksData, ...parsed];
+          setTasks(combined);
+          localStorage.setItem("romnick_active_tasks", JSON.stringify(combined));
+          return;
         }
       }
     } catch (e) {
@@ -37,10 +49,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
     const updated = [...tasks, newTask];
     setTasks(updated);
     try {
-      const userOnly = updated.filter(
-        (t) => !tasksData.some((orig) => orig.id === t.id)
-      );
-      localStorage.setItem("romnick_user_tasks", JSON.stringify(userOnly));
+      localStorage.setItem("romnick_active_tasks", JSON.stringify(updated));
     } catch (e) {
       console.error(e);
     }
@@ -50,10 +59,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
     const updated = tasks.filter((t) => t.id !== id);
     setTasks(updated);
     try {
-      const userOnly = updated.filter(
-        (t) => !tasksData.some((orig) => orig.id === t.id)
-      );
-      localStorage.setItem("romnick_user_tasks", JSON.stringify(userOnly));
+      localStorage.setItem("romnick_active_tasks", JSON.stringify(updated));
     } catch (e) {
       console.error(e);
     }

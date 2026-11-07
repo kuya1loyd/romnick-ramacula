@@ -57,8 +57,13 @@ export default function TaskCard({
             {task.number}
           </div>
 
-          {/* Delete Button for User Uploaded Tasks */}
-          {onDelete && task.id.startsWith("task-") && (
+          {/* Type Badge */}
+          <div className="absolute top-2.5 left-12 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-slate-800 text-[10px] font-bold z-20 shadow-xs border border-slate-200">
+            {task.isExternalLink ? "Web 3D" : "PDF Doc"}
+          </div>
+
+          {/* Delete Button (Available on any task card) */}
+          {onDelete && (
             <button
               type="button"
               onClick={(e) => {
@@ -67,17 +72,12 @@ export default function TaskCard({
                   onDelete(task.id);
                 }
               }}
-              className="absolute top-2.5 right-18 z-30 p-1.5 rounded-full bg-white/95 hover:bg-rose-50 text-slate-400 hover:text-rose-600 shadow-sm transition-colors cursor-pointer"
+              className="absolute top-2.5 right-2.5 z-30 p-1.5 rounded-full bg-white/95 hover:bg-rose-50 text-slate-400 hover:text-rose-600 shadow-sm transition-colors cursor-pointer border border-slate-200/80"
               title="Delete this task"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           )}
-
-          {/* Type Badge in Top Right */}
-          <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-slate-800 text-[10px] font-bold z-20 shadow-xs border border-slate-200">
-            {task.isExternalLink ? "Web 3D" : "PDF Doc"}
-          </div>
 
           {/* Actual Front Page Image Preview */}
           {task.previewImage ? (
