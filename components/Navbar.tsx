@@ -33,6 +33,19 @@ export default function Navbar() {
 
   return (
     <>
+      {/* Upper-Left Fixed Brand Name: GLIMPSE OF ROMNICK */}
+      <div className="fixed top-3 sm:top-4 left-4 sm:left-8 z-50 pointer-events-auto">
+        <Link
+          href="#home"
+          className="flex items-center gap-2.5 px-4 py-2 sm:py-2.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-xs hover:shadow-md hover:border-slate-400 transition-all group"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span className="text-xs sm:text-sm font-black tracking-widest text-slate-900 group-hover:text-indigo-600 transition-colors uppercase">
+            GLIMPSE OF ROMNICK
+          </span>
+        </Link>
+      </div>
+
       {/* Floating Centered Capsule Navbar */}
       <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none px-4 pt-3 sm:pt-4 transition-all">
         <motion.div
@@ -64,12 +77,12 @@ export default function Navbar() {
 
           {/* Mobile Brand indicator & Menu Toggle */}
           <div className="flex md:hidden items-center justify-between w-full gap-4">
-            <Link href="/" className="text-sm font-black tracking-wider text-slate-900">
-              ROMNICK
+            <Link href="#home" className="text-xs font-black tracking-wider text-slate-900 uppercase">
+              GLIMPSE OF ROMNICK
             </Link>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 text-slate-700 hover:text-slate-900 focus:outline-none"
+              className="p-1.5 text-slate-700 hover:text-slate-900 focus:outline-none cursor-pointer"
               aria-label="Toggle navigation"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
