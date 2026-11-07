@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Heart, Globe, Users, ShieldCheck, Sparkles, Check } from "lucide-react";
 
@@ -37,6 +37,21 @@ export default function UploadAdvocacyModal({
   const [description, setDescription] = useState("");
   const [selectedIcon, setSelectedIcon] = useState<AdvocacyItem["iconName"]>("Heart");
 
+  // Lock background scroll & handle escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, onClose]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
@@ -61,118 +76,129 @@ export default function UploadAdvocacyModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/60 backdrop-blur-sm"
+          onClick={onClose}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 my-8"
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[88vh] overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            {/* Header (Always Visible at Top) */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
                   <Heart className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-slate-900">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
                     Add Advocacy Initiative
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     Publish an educational advocacy cause or student community campaign
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4 text-xs">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Advocacy Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Digital Inclusivity in Rural Elementary Classrooms"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none text-slate-800 text-xs"
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="overflow-y-auto px-5 sm:px-6 py-4 space-y-4 text-xs flex-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Advocacy Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Digital Inclusivity in Rural Elementary Classrooms"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none text-slate-800 text-xs"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Focus Area / Pillar
-                </label>
-                <input
-                  type="text"
-                  value={focus}
-                  onChange={(e) => setFocus(e.target.value)}
-                  placeholder="e.g. Accessible Learning / Safe Cyber Habits"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none text-slate-800 text-xs"
-                />
-              </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Focus Area / Pillar
+                  </label>
+                  <input
+                    type="text"
+                    value={focus}
+                    onChange={(e) => setFocus(e.target.value)}
+                    placeholder="e.g. Accessible Learning / Safe Cyber Habits"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none text-slate-800 text-xs"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Symbol Icon
-                </label>
-                <div className="flex items-center gap-2">
-                  {ICONS.map((item) => {
-                    const IconComp = item.Icon;
-                    const isSelected = selectedIcon === item.name;
-                    return (
-                      <button
-                        key={item.name}
-                        type="button"
-                        onClick={() => setSelectedIcon(item.name as any)}
-                        className={`p-2.5 rounded-xl border transition-all ${
-                          isSelected
-                            ? "bg-rose-50 border-rose-500 text-rose-600 scale-105 shadow-xs"
-                            : "bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800"
-                        }`}
-                      >
-                        <IconComp className="w-5 h-5" />
-                      </button>
-                    );
-                  })}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Symbol Icon
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {ICONS.map((item) => {
+                      const IconComp = item.Icon;
+                      const isSelected = selectedIcon === item.name;
+                      return (
+                        <button
+                          key={item.name}
+                          type="button"
+                          onClick={() => setSelectedIcon(item.name as any)}
+                          className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-rose-50 border-rose-500 text-rose-600 scale-105 shadow-xs"
+                              : "bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          <IconComp className="w-5 h-5" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Advocacy Statement & Description *
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe the initiative, key goals, and impact on elementary learners..."
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none text-slate-800 text-xs resize-none"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Advocacy Statement & Description *
-                </label>
-                <textarea
-                  rows={3}
-                  required
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe the initiative, key goals, and impact on elementary learners..."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-rose-500 focus:outline-none text-slate-800 text-xs resize-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              {/* Fixed Footer */}
+              <div className="px-5 sm:px-6 py-3.5 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-colors"
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-4 h-4 text-emerald-400" />
                   <span>Publish Advocacy</span>
                 </button>
               </div>
