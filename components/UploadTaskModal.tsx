@@ -80,6 +80,8 @@ export default function UploadTaskModal({
   const [fileName, setFileName] = useState("");
   const [fileDataUrl, setFileDataUrl] = useState("");
   const [fileSizeStr, setFileSizeStr] = useState("");
+  const [coverImage, setCoverImage] = useState("");
+  const [coverFileName, setCoverFileName] = useState("");
 
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,6 +91,18 @@ export default function UploadTaskModal({
       const reader = new FileReader();
       reader.onload = (event) => {
         setFileDataUrl(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverFileName(file.name);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCoverImage(event.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -109,18 +123,15 @@ export default function UploadTaskModal({
       category,
       subject: subject.trim(),
       description: description.trim() || "Uploaded academic coursework and activity.",
-      pdfUrl: taskType === "pdf" ? (fileDataUrl || "/tasks/TTL_Post_Presentation_Activity_Sheet.pdf") : undefined,
+      pdfUrl: taskType === "pdf" ? (fileDataUrl || undefined) : undefined,
       projectUrl: taskType === "web" ? projectUrl.trim() : undefined,
       isExternalLink: taskType === "web",
       uploadDate: "November 2026",
-      fileSize: fileSizeStr || "180 KB",
+      fileSize: fileSizeStr || undefined,
       tags: ["BEEd-2C", "NEMSU", subject.slice(0, 8)],
       cardColor: selectedColor,
-      // Default to front page preview or placeholder
-      previewImage:
-        taskType === "pdf"
-          ? "/tasks/ttl-activity-sheet-front.png"
-          : "/tasks/zigzag-preview.png",
+      // Only use user's uploaded cover image if provided; otherwise undefined so it renders dynamic custom document card
+      previewImage: coverImage || undefined,
     };
 
     onAddTask(newTask);
@@ -132,6 +143,8 @@ export default function UploadTaskModal({
     setProjectUrl("");
     setFileName("");
     setFileDataUrl("");
+    setCoverImage("");
+    setCoverFileName("");
   };
 
   return (
@@ -285,6 +298,48 @@ export default function UploadTaskModal({
                   />
                 </div>
               )}
+
+              {/* Cover Preview / Front Page Screenshot (Optional) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Front Page Cover Screenshot (Optional)
+                </label>
+                <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-3 text-center hover:border-indigo-400 transition-colors bg-slate-50/50 flex items-center justify-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  {coverImage ? (
+                    <div className="flex items-center gap-3 py-1">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={coverImage}
+                        alt="Front page preview"
+                        className="w-12 h-12 object-cover rounded-xl border border-slate-200 shadow-xs shrink-0"
+                      />
+                      <div className="text-left">
+                        <p className="text-xs font-bold text-slate-800 truncate max-w-[220px]">
+                          {coverFileName}
+                        </p>
+                        <p className="text-[10px] text-emerald-600 font-semibold">
+                          Custom front page image uploaded
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-2">
+                      <p className="text-xs font-bold text-slate-700">
+                        Upload screenshot or cover image (PNG, JPG)
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        If omitted, an icon card with your task title will be generated
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Instructor & Campus */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

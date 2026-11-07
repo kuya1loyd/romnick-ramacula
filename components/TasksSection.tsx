@@ -46,6 +46,19 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
     }
   };
 
+  const handleDeleteTask = (id: string) => {
+    const updated = tasks.filter((t) => t.id !== id);
+    setTasks(updated);
+    try {
+      const userOnly = updated.filter(
+        (t) => !tasksData.some((orig) => orig.id === t.id)
+      );
+      localStorage.setItem("romnick_user_tasks", JSON.stringify(userOnly));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const categories = useMemo(() => {
     const cats = new Set(tasks.map((t) => t.category));
     return ["All", ...Array.from(cats)];
@@ -199,6 +212,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
                   index={index}
                   total={filteredTasks.length}
                   onViewPdf={onViewPdf}
+                  onDelete={handleDeleteTask}
                 />
               ))}
             </div>

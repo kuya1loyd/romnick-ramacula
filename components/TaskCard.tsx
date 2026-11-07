@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   Globe,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { Task } from "@/data/tasks";
 
@@ -19,6 +20,7 @@ interface TaskCardProps {
   index: number;
   total: number;
   onViewPdf: (task: Task) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function TaskCard({
@@ -26,6 +28,7 @@ export default function TaskCard({
   index,
   total,
   onViewPdf,
+  onDelete,
 }: TaskCardProps) {
   return (
     <motion.div
@@ -54,6 +57,23 @@ export default function TaskCard({
             {task.number}
           </div>
 
+          {/* Delete Button for User Uploaded Tasks */}
+          {onDelete && task.id.startsWith("task-") && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Delete task "${task.title}"?`)) {
+                  onDelete(task.id);
+                }
+              }}
+              className="absolute top-2.5 right-18 z-30 p-1.5 rounded-full bg-white/95 hover:bg-rose-50 text-slate-400 hover:text-rose-600 shadow-sm transition-colors cursor-pointer"
+              title="Delete this task"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {/* Type Badge in Top Right */}
           <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-slate-800 text-[10px] font-bold z-20 shadow-xs border border-slate-200">
             {task.isExternalLink ? "Web 3D" : "PDF Doc"}
@@ -66,6 +86,7 @@ export default function TaskCard({
                 src={task.previewImage}
                 alt={`${task.title} front page preview`}
                 fill
+                unoptimized={task.previewImage.startsWith("data:")}
                 sizes="(max-width: 768px) 300px, 350px"
                 className={`transition-transform duration-500 group-hover/box:scale-105 ${
                   task.isExternalLink
@@ -76,20 +97,20 @@ export default function TaskCard({
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover/box:opacity-100 transition-opacity pointer-events-none" />
             </div>
           ) : (
-            /* Fallback Icon Artwork */
-            <div className="w-full h-full flex flex-col items-center justify-center text-center p-3">
-              <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-2 group-hover/box:scale-110 group-hover/box:rotate-3 transition-transform duration-300 shadow-xs">
+            /* Fallback Icon Artwork with Dynamic Title & Subject */
+            <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 bg-gradient-to-br from-slate-50 via-white to-slate-100">
+              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200/90 flex items-center justify-center mb-2.5 group-hover/box:scale-110 group-hover/box:rotate-2 transition-transform duration-300 shadow-xs">
                 {task.isExternalLink ? (
                   <Globe className="w-7 h-7 text-sky-600" />
                 ) : (
-                  <FileText className="w-7 h-7 text-amber-700" />
+                  <FileText className="w-7 h-7 text-indigo-600" />
                 )}
               </div>
-              <div className="text-[11px] font-bold text-slate-800 tracking-tight line-clamp-1">
-                {task.subject || task.category}
+              <div className="text-xs font-black text-slate-900 tracking-tight line-clamp-2 px-2 mb-1">
+                {task.title}
               </div>
-              <div className="text-[10px] text-slate-500 font-medium">
-                {task.campus || "NEMSU - Lianga Campus"}
+              <div className="text-[10px] text-slate-500 font-bold line-clamp-1">
+                {task.subject || task.category}
               </div>
             </div>
           )}
