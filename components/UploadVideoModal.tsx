@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Video, Upload, Link as LinkIcon, Check, Film, Smartphone, Monitor, Trash2 } from "lucide-react";
+import { X, Video, Upload, Link as LinkIcon, Check, Film, Smartphone, Monitor, Trash2, CheckCircle2 } from "lucide-react";
 import { saveVideoToDb } from "@/lib/videoDb";
 
 export interface VideoReportItem {
@@ -42,10 +42,9 @@ export default function UploadVideoModal({
 
   // Device File State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileDataUrl, setFileDataUrl] = useState<string>("");
+  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
   const [fileSizeStr, setFileSizeStr] = useState<string>("");
-  const [isLoadingFile, setIsLoadingFile] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -64,12 +63,29 @@ export default function UploadVideoModal({
     };
   }, [isOpen, onClose]);
 
+  // Clean up object URL when component unmounts or file changes
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   // Handle Video File Selection from PC or Cellphone
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Revoke previous blob URL if exists
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    // Instant object URL - 0ms delay, no memory freeze!
+    const objectUrl = URL.createObjectURL(file);
     setSelectedFile(file);
+    setPreviewUrl(objectUrl);
     setFileName(file.name);
 
     // Format size (MB / KB)
@@ -82,24 +98,14 @@ export default function UploadVideoModal({
       const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
       setTitle(cleanName);
     }
-
-    // Read as Data URL for playback and offline storage
-    setIsLoadingFile(true);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setFileDataUrl(result);
-      setIsLoadingFile(false);
-    };
-    reader.onerror = () => {
-      setIsLoadingFile(false);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleRemoveFile = () => {
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(null);
-    setFileDataUrl("");
+    setPreviewUrl("");
     setFileName("");
     setFileSizeStr("");
     if (fileInputRef.current) {
@@ -112,11 +118,10 @@ export default function UploadVideoModal({
     if (!title.trim()) return;
 
     const reportId = `video-${Date.now()}`;
-    const effectiveVideoUrl = sourceType === "device" ? fileDataUrl : videoUrl.trim();
 
-    // If a device file was selected, persist to IndexedDB for reliable offline storage
-    if (sourceType === "device" && fileDataUrl) {
-      await saveVideoToDb(reportId, fileDataUrl);
+    // If a device file was selected, persist the actual File object to IndexedDB
+    if (sourceType === "device" && selectedFile) {
+      await saveVideoToDb(reportId, selectedFile);
     }
 
     const newReport: VideoReportItem = {
@@ -127,7 +132,8 @@ export default function UploadVideoModal({
       date: date.trim(),
       instructor: instructor.trim() || "Kerstan Isaac Requiza",
       description: description.trim() || "Uploaded academic video presentation.",
-      videoUrl: effectiveVideoUrl || undefined,
+      // For local files, keep the active blob URL for instant in-session playback
+      videoUrl: sourceType === "device" ? previewUrl : videoUrl.trim() || undefined,
       fileName: sourceType === "device" ? fileName : undefined,
       fileSize: sourceType === "device" ? fileSizeStr : undefined,
       isLocalFile: sourceType === "device",
@@ -227,62 +233,91 @@ export default function UploadVideoModal({
                       Select Video File from your PC or Cellphone *
                     </label>
 
-                    {fileDataUrl ? (
-                      /* File Selected Card with Mini Video Preview */
-                      <div className="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200 flex flex-col gap-3">
+                    {/* Hidden Native File Input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="video/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+
+                    {selectedFile && previewUrl ? (
+                      /* File Selected: Instant Video Preview Player + File Badge */
+                      <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 flex flex-col gap-3 shadow-xs">
                         <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black shadow-inner">
                           <video
-                            src={fileDataUrl}
+                            src={previewUrl}
                             controls
+                            playsInline
                             className="w-full h-full object-contain"
                           />
                         </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="overflow-hidden">
-                            <p className="text-xs font-bold text-slate-900 truncate">
-                              {fileName}
-                            </p>
-                            <p className="text-[10px] text-indigo-600 font-semibold mt-0.5">
-                              Ready to upload • {fileSizeStr}
-                            </p>
+                        <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-indigo-100">
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                            <div className="overflow-hidden">
+                              <p className="text-xs font-bold text-slate-900 truncate">
+                                {fileName}
+                              </p>
+                              <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">
+                                Video ready for upload • {fileSizeStr}
+                              </p>
+                            </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={handleRemoveFile}
-                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer shrink-0"
-                            title="Remove and pick another video"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold transition-colors cursor-pointer"
+                            >
+                              Change
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleRemoveFile}
+                              className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                              title="Remove video"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
                       /* Drag & Drop / Tap to Choose Box */
-                      <div className="relative border-2 border-dashed border-indigo-200 hover:border-indigo-400 rounded-2xl p-5 text-center bg-indigo-50/20 hover:bg-indigo-50/40 transition-all cursor-pointer group">
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,video/*"
-                          onChange={handleFileChange}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        />
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-2.5 group-hover:scale-110 transition-transform">
-                          <Film className="w-6 h-6" />
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="relative border-2 border-dashed border-indigo-300 hover:border-indigo-500 rounded-2xl p-6 text-center bg-indigo-50/30 hover:bg-indigo-50/60 transition-all cursor-pointer group"
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-xs">
+                          <Film className="w-7 h-7" />
                         </div>
-                        <p className="text-xs font-bold text-slate-800">
-                          {isLoadingFile ? "Reading video file..." : "Tap or click to browse files on your PC or phone"}
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 mb-1">
+                          Tap or click to browse files on your PC or phone
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-1 flex items-center justify-center gap-2">
+                        <p className="text-[11px] text-slate-500 flex items-center justify-center gap-2 mb-3">
                           <span className="flex items-center gap-1">
-                            <Monitor className="w-3 h-3 text-slate-400" /> PC Files
+                            <Monitor className="w-3.5 h-3.5 text-slate-400" /> PC Files
                           </span>
                           <span>•</span>
                           <span className="flex items-center gap-1">
-                            <Smartphone className="w-3 h-3 text-slate-400" /> Phone Gallery / Videos
+                            <Smartphone className="w-3.5 h-3.5 text-slate-400" /> Phone Gallery / Videos
                           </span>
                         </p>
-                        <p className="text-[10px] text-indigo-500 font-medium mt-1.5">
-                          Supports MP4, MOV, WebM, and other video formats
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fileInputRef.current?.click();
+                          }}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm group-hover:scale-105 transition-all cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Choose Video File</span>
+                        </button>
+                        <p className="text-[10px] text-indigo-500 font-medium mt-3">
+                          Supports MP4, MOV, WebM, and other camera video formats
                         </p>
                       </div>
                     )}
@@ -401,8 +436,8 @@ export default function UploadVideoModal({
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoadingFile || (sourceType === "device" && !fileDataUrl && !title)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-400 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                  disabled={sourceType === "device" && !selectedFile}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-300 disabled:text-slate-500 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Check className="w-4 h-4 text-emerald-400" />
                   <span>Publish Video Report</span>

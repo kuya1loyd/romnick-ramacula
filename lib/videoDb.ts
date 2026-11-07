@@ -19,7 +19,7 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveVideoToDb(id: string, fileData: string): Promise<void> {
+export async function saveVideoToDb(id: string, fileData: Blob | File | string): Promise<void> {
   try {
     const db = await openDb();
     return new Promise((resolve, reject) => {
@@ -34,14 +34,25 @@ export async function saveVideoToDb(id: string, fileData: string): Promise<void>
   }
 }
 
-export async function getVideoFromDb(id: string): Promise<string | null> {
+export async function getVideoUrlFromDb(id: string): Promise<string | null> {
   try {
     const db = await openDb();
     return new Promise((resolve) => {
       const tx = db.transaction(STORE_NAME, "readonly");
       const store = tx.objectStore(STORE_NAME);
       const getReq = store.get(id);
-      getReq.onsuccess = () => resolve(getReq.result || null);
+      getReq.onsuccess = () => {
+        const result = getReq.result;
+        if (!result) return resolve(null);
+        if (typeof result === "string") {
+          return resolve(result);
+        }
+        if (result instanceof Blob) {
+          const url = URL.createObjectURL(result);
+          return resolve(url);
+        }
+        resolve(null);
+      };
       getReq.onerror = () => resolve(null);
     });
   } catch {

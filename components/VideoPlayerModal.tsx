@@ -129,3 +129,4 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
     </AnimatePresence>
   );
 }
+

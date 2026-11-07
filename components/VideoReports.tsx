@@ -6,7 +6,7 @@ import { Video, Play, Calendar, User, Plus, ExternalLink, Trash2, Clapperboard, 
 import UploadVideoModal, { VideoReportItem } from "./UploadVideoModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import VideoPlayerModal from "./VideoPlayerModal";
-import { getVideoFromDb, deleteVideoFromDb } from "@/lib/videoDb";
+import { getVideoUrlFromDb, deleteVideoFromDb } from "@/lib/videoDb";
 
 export default function VideoReports() {
   const [reports, setReports] = useState<VideoReportItem[]>([]);
@@ -28,12 +28,15 @@ export default function VideoReports() {
     setHasLoaded(true);
   }, []);
 
-  // Save to localStorage when changed
+  // Save to localStorage when changed (without storing ephemeral blob URLs)
   const handleAddVideo = (newReport: VideoReportItem) => {
     const updated = [newReport, ...reports];
     setReports(updated);
     try {
-      localStorage.setItem("romnick_video_reports", JSON.stringify(updated));
+      const sanitized = updated.map((r) =>
+        r.isLocalFile ? { ...r, videoUrl: undefined } : r
+      );
+      localStorage.setItem("romnick_video_reports", JSON.stringify(sanitized));
     } catch (e) {
       console.error(e);
     }
@@ -43,19 +46,26 @@ export default function VideoReports() {
     const updated = reports.filter((r) => r.id !== id);
     setReports(updated);
     try {
-      localStorage.setItem("romnick_video_reports", JSON.stringify(updated));
+      const sanitized = updated.map((r) =>
+        r.isLocalFile ? { ...r, videoUrl: undefined } : r
+      );
+      localStorage.setItem("romnick_video_reports", JSON.stringify(sanitized));
       deleteVideoFromDb(id);
     } catch (e) {
       console.error(e);
     }
   };
 
-  // Play video: fetch from IndexedDB if needed, then open player
+  // Play video: fetch from IndexedDB if local file, then open player
   const handlePlayVideo = async (report: VideoReportItem) => {
-    if (!report.videoUrl && report.isLocalFile) {
-      const dbData = await getVideoFromDb(report.id);
-      if (dbData) {
-        setActivePlayingReport({ ...report, videoUrl: dbData });
+    if (report.videoUrl) {
+      setActivePlayingReport(report);
+      return;
+    }
+    if (report.isLocalFile) {
+      const dbUrl = await getVideoUrlFromDb(report.id);
+      if (dbUrl) {
+        setActivePlayingReport({ ...report, videoUrl: dbUrl });
         return;
       }
     }
@@ -188,7 +198,7 @@ export default function VideoReports() {
                       <span className="truncate">{report.instructor}</span>
                     </div>
 
-                    {report.videoUrl ? (
+                    {report.videoUrl || report.isLocalFile ? (
                       <button
                         onClick={() => handlePlayVideo(report)}
                         className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
