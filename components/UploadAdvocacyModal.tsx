@@ -37,20 +37,15 @@ export default function UploadAdvocacyModal({
   const [description, setDescription] = useState("");
   const [selectedIcon, setSelectedIcon] = useState<AdvocacyItem["iconName"]>("Heart");
 
-  // Lock background scroll & handle escape
+  // Lock background scroll
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
     if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
     }
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,18 +73,12 @@ export default function UploadAdvocacyModal({
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/60 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              onClose();
-            }
-          }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[88vh] overflow-hidden"
           >
             {/* Header (Always Visible at Top) */}
@@ -118,7 +107,15 @@ export default function UploadAdvocacyModal({
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+            <form
+              onSubmit={handleSubmit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+                  e.preventDefault();
+                }
+              }}
+              className="flex flex-col flex-1 overflow-hidden"
+            >
               {/* Scrollable Form Body */}
               <div className="overflow-y-auto px-5 sm:px-6 py-4 space-y-4 text-xs flex-1">
                 <div>
