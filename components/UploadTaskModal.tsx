@@ -167,7 +167,11 @@ export default function UploadTaskModal({
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/60 backdrop-blur-sm"
-          onClick={onClose}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              onClose();
+            }
+          }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 15 }}

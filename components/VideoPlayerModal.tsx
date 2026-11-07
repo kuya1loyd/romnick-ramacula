@@ -43,7 +43,11 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
     <AnimatePresence>
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-8 bg-slate-950/85 backdrop-blur-md"
-        onClick={onClose}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onClose();
+          }
+        }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
