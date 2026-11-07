@@ -33,14 +33,14 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Upper-Left Fixed Brand Name: GLIMPSE OF ROMNICK */}
-      <div className="fixed top-3 sm:top-4 left-4 sm:left-8 z-50 pointer-events-auto">
+      {/* Upper-Left Fixed Brand Name: GLIMPSE OF ROMNICK (Clean text, no box) */}
+      <div className="fixed top-4 sm:top-5 left-4 sm:left-8 z-50 pointer-events-auto">
         <Link
           href="#home"
-          className="flex items-center gap-2.5 px-4 py-2 sm:py-2.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/90 shadow-xs hover:shadow-md hover:border-slate-400 transition-all group"
+          className="inline-flex items-center gap-2.5 text-slate-900 hover:text-indigo-600 transition-colors group select-none"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-          <span className="text-xs sm:text-sm font-black tracking-widest text-slate-900 group-hover:text-indigo-600 transition-colors uppercase">
+          <span className="text-xs sm:text-sm font-black tracking-widest uppercase">
             GLIMPSE OF ROMNICK
           </span>
         </Link>
