@@ -544,20 +544,27 @@ export default function TypingTestKeyboard() {
 
         {/* Realistic Mechanical Keyboard Layout with Dynamic Theme Colors & RGB Underglow */}
         <div className="relative max-w-4xl mx-auto select-none isolate">
-          {/* RGB Underglow Halo Animation (Around the Chassis) */}
-          {rgbEnabled && (
-            <>
-              {/* Outer 360-degree Chroma Aura */}
-              <div className="absolute -inset-4 sm:-inset-6 rounded-[3.2rem] rgb-underglow blur-2xl opacity-90 -z-10 pointer-events-none transition-opacity duration-500 rgb-active-pulse" />
-              {/* Edge Diffused Backlight */}
-              <div className="absolute -inset-1.5 sm:-inset-2 rounded-[2.8rem] rgb-underglow blur-md opacity-80 -z-10 pointer-events-none transition-opacity duration-500" />
-            </>
-          )}
+          {/* Mobile swipe helper hint */}
+          <div className="sm:hidden text-center text-[11px] text-slate-400 mb-2">
+            ⇄ Swipe horizontally to access the complete keyboard layout
+          </div>
 
-          {/* Keyboard Chassis with Dynamic Theme Color */}
-          <div
-            className={`relative p-4 sm:p-6 rounded-[2.5rem] border-4 shadow-2xl transition-all duration-500 overflow-hidden ${currentTheme.chassisBg} ${currentTheme.chassisBorder}`}
-          >
+          <div className="overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="min-w-[560px] sm:min-w-0 relative">
+              {/* RGB Underglow Halo Animation (Around the Chassis) */}
+              {rgbEnabled && (
+                <>
+                  {/* Outer 360-degree Chroma Aura */}
+                  <div className="absolute -inset-4 sm:-inset-6 rounded-[3.2rem] rgb-underglow blur-2xl opacity-90 -z-10 pointer-events-none transition-opacity duration-500 rgb-active-pulse" />
+                  {/* Edge Diffused Backlight */}
+                  <div className="absolute -inset-1.5 sm:-inset-2 rounded-[2.8rem] rgb-underglow blur-md opacity-80 -z-10 pointer-events-none transition-opacity duration-500" />
+                </>
+              )}
+
+              {/* Keyboard Chassis with Dynamic Theme Color */}
+              <div
+                className={`relative p-4 sm:p-6 rounded-[2.5rem] border-4 shadow-2xl transition-all duration-500 overflow-hidden ${currentTheme.chassisBg} ${currentTheme.chassisBorder}`}
+              >
             {/* Top Bezel Glowing RGB Light Strip - fixed layout height so keys never shift */}
             <div
               className={`relative z-10 w-full mb-3 px-2 sm:px-4 transition-opacity duration-300 ${
@@ -743,6 +750,8 @@ export default function TypingTestKeyboard() {
                   width="w-10 sm:w-12"
                 />
               </div>
+            </div>
+          </div>
             </div>
           </div>
         </div>

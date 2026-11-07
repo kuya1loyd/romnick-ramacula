@@ -6,6 +6,7 @@ import { Search, Filter, FileText, ChevronLeft, ChevronRight, Sparkles, Plus } f
 import { tasksData, Task } from "@/data/tasks";
 import TaskCard from "./TaskCard";
 import UploadTaskModal from "./UploadTaskModal";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 
 interface TasksSectionProps {
   onViewPdf: (task: Task) => void;
@@ -16,6 +17,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Load tasks from localStorage (defaults to tasksData on first visit)
@@ -218,7 +220,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
                   index={index}
                   total={filteredTasks.length}
                   onViewPdf={onViewPdf}
-                  onDelete={handleDeleteTask}
+                  onRequestDelete={(t) => setTaskToDelete(t)}
                 />
               ))}
             </div>
@@ -254,6 +256,20 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
         onClose={() => setIsUploadOpen(false)}
         onAddTask={handleAddTask}
         nextNumber={String(tasks.length + 1).padStart(2, "0")}
+      />
+
+      {/* Custom Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!taskToDelete}
+        title={taskToDelete?.title || ""}
+        itemType="Task / Activity"
+        onConfirm={() => {
+          if (taskToDelete) {
+            handleDeleteTask(taskToDelete.id);
+            setTaskToDelete(null);
+          }
+        }}
+        onClose={() => setTaskToDelete(null)}
       />
     </section>
   );

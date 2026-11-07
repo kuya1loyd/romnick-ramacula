@@ -32,8 +32,8 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Upper-Left Fixed Brand Name: GLIMPSE OF ROMNICK (Clean text, no box) */}
-      <div className="fixed top-4 sm:top-5 left-4 sm:left-8 z-50 pointer-events-auto">
+      {/* Upper-Left Fixed Brand Name: GLIMPSE OF ROMNICK (Clean text, no box - Desktop Only) */}
+      <div className="hidden md:block fixed top-4 sm:top-5 left-4 sm:left-8 z-50 pointer-events-auto">
         <Link
           href="#home"
           className="inline-flex items-center gap-2.5 text-slate-900 hover:text-indigo-600 transition-colors group select-none"

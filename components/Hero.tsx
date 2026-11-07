@@ -23,11 +23,11 @@ export default function Hero() {
           className="flex flex-nowrap items-center justify-center gap-x-2 sm:gap-x-4 md:gap-x-6 text-center select-none w-full"
         >
           {/* ROMNICK (Outlined) */}
-          <span className="text-outline text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight uppercase leading-none whitespace-nowrap">
+          <span className="text-outline text-2xl min-[360px]:text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight uppercase leading-none whitespace-nowrap">
             ROMNICK
           </span>
           {/* RAMACULA (Solid) */}
-          <span className="text-slate-900 text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight uppercase leading-none whitespace-nowrap">
+          <span className="text-slate-900 text-2xl min-[360px]:text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight uppercase leading-none whitespace-nowrap">
             RAMACULA
           </span>
         </motion.div>
@@ -58,6 +58,7 @@ export default function Hero() {
                 alt="Romnick P. Ramacula"
                 fill
                 priority
+                sizes="(max-width: 640px) 224px, (max-width: 768px) 256px, 320px"
                 className="object-cover object-top hover:scale-105 transition-transform duration-700 ease-out"
               />
             </div>

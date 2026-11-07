@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Heart, Globe, Users, ShieldCheck, Sparkles, Plus, Trash2, Megaphone } from "lucide-react";
 import UploadAdvocacyModal, { AdvocacyItem } from "./UploadAdvocacyModal";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 
 const ICON_MAP = {
   Heart,
@@ -16,6 +17,7 @@ const ICON_MAP = {
 export default function Advocacy() {
   const [advocacies, setAdvocacies] = useState<AdvocacyItem[]>([]);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [advocacyToDelete, setAdvocacyToDelete] = useState<AdvocacyItem | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
   // Load from localStorage on mount
@@ -119,8 +121,8 @@ export default function Advocacy() {
                         <IconComp className="w-6 h-6" />
                       </div>
                       <button
-                        onClick={() => handleDelete(item.id)}
-                        className="p-1.5 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                        onClick={() => setAdvocacyToDelete(item)}
+                        className="p-1.5 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
                         title="Delete Advocacy"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -181,6 +183,20 @@ export default function Advocacy() {
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onAddAdvocacy={handleAddAdvocacy}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!advocacyToDelete}
+        title={advocacyToDelete?.title || ""}
+        itemType="Advocacy Initiative"
+        onConfirm={() => {
+          if (advocacyToDelete) {
+            handleDelete(advocacyToDelete.id);
+            setAdvocacyToDelete(null);
+          }
+        }}
+        onClose={() => setAdvocacyToDelete(null)}
       />
     </section>
   );

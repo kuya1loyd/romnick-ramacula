@@ -20,7 +20,7 @@ interface TaskCardProps {
   index: number;
   total: number;
   onViewPdf: (task: Task) => void;
-  onDelete?: (id: string) => void;
+  onRequestDelete?: (task: Task) => void;
 }
 
 export default function TaskCard({
@@ -28,7 +28,7 @@ export default function TaskCard({
   index,
   total,
   onViewPdf,
-  onDelete,
+  onRequestDelete,
 }: TaskCardProps) {
   return (
     <motion.div
@@ -62,15 +62,13 @@ export default function TaskCard({
             {task.isExternalLink ? "Web 3D" : "PDF Doc"}
           </div>
 
-          {/* Delete Button (Available on any task card) */}
-          {onDelete && (
+          {/* Delete Button (Opens Confirmation Modal) */}
+          {onRequestDelete && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm(`Delete task "${task.title}"?`)) {
-                  onDelete(task.id);
-                }
+                onRequestDelete(task);
               }}
               className="absolute top-2.5 right-2.5 z-30 p-1.5 rounded-full bg-white/95 hover:bg-rose-50 text-slate-400 hover:text-rose-600 shadow-sm transition-colors cursor-pointer border border-slate-200/80"
               title="Delete this task"

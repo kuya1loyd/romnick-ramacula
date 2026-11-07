@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Video, Play, Calendar, User, Plus, ExternalLink, Trash2, Clapperboard } from "lucide-react";
 import UploadVideoModal, { VideoReportItem } from "./UploadVideoModal";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 
 export default function VideoReports() {
   const [reports, setReports] = useState<VideoReportItem[]>([]);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<VideoReportItem | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
   // Load from localStorage on mount
@@ -116,10 +118,10 @@ export default function VideoReports() {
                     </span>
                   </div>
 
-                  {/* Delete Button */}
+                  {/* Delete Button (Opens Confirmation Modal) */}
                   <button
-                    onClick={() => handleDelete(report.id)}
-                    className="absolute top-3 right-3 p-1.5 rounded-full bg-black/50 text-white/70 hover:text-rose-400 hover:bg-black/80 transition-colors z-20"
+                    onClick={() => setReportToDelete(report)}
+                    className="absolute top-3 right-3 p-1.5 rounded-full bg-black/50 text-white/70 hover:text-rose-400 hover:bg-black/80 transition-colors z-20 cursor-pointer"
                     title="Remove Video"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -204,6 +206,20 @@ export default function VideoReports() {
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onAddVideo={handleAddVideo}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!reportToDelete}
+        title={reportToDelete?.title || ""}
+        itemType="Video Report"
+        onConfirm={() => {
+          if (reportToDelete) {
+            handleDelete(reportToDelete.id);
+            setReportToDelete(null);
+          }
+        }}
+        onClose={() => setReportToDelete(null)}
       />
     </section>
   );
