@@ -25,7 +25,6 @@ export default function Navbar() {
   const navLinks = [
     { label: "Home", href: "#home" },
     { label: "About Me", href: "#about" },
-    { label: "Education", href: "#education" },
     { label: "Advocacy", href: "#advocacy" },
     { label: "Video Reports", href: "#video-reports" },
     { label: "My Tasks", href: "#my-tasks" },

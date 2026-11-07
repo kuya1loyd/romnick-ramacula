@@ -25,9 +25,6 @@ export default function Footer() {
             <Link href="#about" className="hover:text-slate-900 transition-colors">
               About
             </Link>
-            <Link href="#education" className="hover:text-slate-900 transition-colors">
-              Education
-            </Link>
             <Link href="#advocacy" className="hover:text-slate-900 transition-colors">
               Advocacy
             </Link>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
-import Education from "@/components/Education";
 import TypingTestKeyboard from "@/components/TypingTestKeyboard";
 import Advocacy from "@/components/Advocacy";
 import VideoReports from "@/components/VideoReports";
@@ -38,9 +37,6 @@ export default function Home() {
 
       {/* About Me Section (#about) */}
       <About />
-
-      {/* Education Section (#education) */}
-      <Education />
 
       {/* Interactive Typing Test & Mechanical Keyboard Hub */}
       <TypingTestKeyboard />
