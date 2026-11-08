@@ -121,6 +121,9 @@ export default function TypingTestKeyboard() {
   const [keyboardHeight, setKeyboardHeight] = useState<number | null>(null);
   const [mobileTypingMode, setMobileTypingMode] = useState<"phone" | "screen">("phone");
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [level, setLevel] = useState(1);
+  const [levelCompleted, setLevelCompleted] = useState(false);
+  const nextLevelTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const updateScale = () => {
@@ -276,6 +279,69 @@ export default function TypingTestKeyboard() {
     resetTest();
   };
 
+  // Play celebration victory chime when phase/level is complete
+  const playSuccessChime = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
+      const now = ctx.currentTime;
+      [523.25, 659.25, 783.99].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+        gain.gain.setValueAtTime(0.2, now + idx * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.1);
+        osc.stop(now + idx * 0.1 + 0.32);
+      });
+    } catch {
+      // AudioContext requires user interaction
+    }
+  }, [soundEnabled]);
+
+  // Advance to Next Phase / Level automatically
+  const advanceToNextLevel = useCallback(() => {
+    if (nextLevelTimerRef.current) {
+      clearTimeout(nextLevelTimerRef.current);
+      nextLevelTimerRef.current = null;
+    }
+    setLevelCompleted(false);
+    setLevel((lvl) => lvl + 1);
+    if (activeMode === "quote") {
+      setQuoteIndex((prev) => (prev + 1) % QUOTE_LIST.length);
+    } else if (activeMode === "words") {
+      setCustomWordsText(generateWordsSequence(withPunctuation, withNumbers));
+    }
+    setTypedText("");
+    setStartTime(null);
+    setWpm(0);
+    setActiveKey(null);
+    setTimeout(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    }, 50);
+  }, [activeMode, generateWordsSequence, withNumbers, withPunctuation]);
+
+  const triggerNextLevel = useCallback(() => {
+    setLevelCompleted(true);
+    playSuccessChime();
+    if (nextLevelTimerRef.current) clearTimeout(nextLevelTimerRef.current);
+    nextLevelTimerRef.current = setTimeout(() => {
+      advanceToNextLevel();
+    }, 1400);
+  }, [advanceToNextLevel, playSuccessChime]);
+
   // Central Key Hit Handler
   const handleKeyHit = useCallback(
     (key: string) => {
@@ -309,6 +375,10 @@ export default function TypingTestKeyboard() {
                   setWpm(Math.round(words / minutes));
                 }
               }
+              // Automatic transition to next phase / level when quote is completed!
+              if (next.length === targetText.length) {
+                setTimeout(() => triggerNextLevel(), 50);
+              }
               return next;
             }
             return prev;
@@ -320,7 +390,7 @@ export default function TypingTestKeyboard() {
         setActiveKey(null);
       }, 130);
     },
-    [activeMode, playSwitchSound, resetTest, startTime, switchType, targetText]
+    [activeMode, playSwitchSound, resetTest, startTime, switchType, targetText, triggerNextLevel]
   );
 
   // Global window key listener + hidden input keep-alive
@@ -437,7 +507,12 @@ export default function TypingTestKeyboard() {
         {/* Top Header & Statistics Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 text-xs text-slate-500 font-mono">
           {/* Stats on Left */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-black shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Level {level}</span>
+            </span>
+
             {activeMode === "zen" ? (
               <span className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
                 <Feather className="w-4 h-4 text-orange-600" />
@@ -547,7 +622,35 @@ export default function TypingTestKeyboard() {
 
         {/* Text Display Card */}
         <div className="relative p-6 sm:p-8 rounded-3xl bg-white/90 backdrop-blur-xs border border-slate-200/90 shadow-sm mb-6 text-center">
-          {activeMode === "zen" ? (
+          {levelCompleted ? (
+            /* Celebration Level-Up Banner */
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="py-6 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 text-white shadow-xl flex flex-col items-center justify-center gap-2 select-none"
+            >
+              <div className="flex items-center gap-2 text-xl sm:text-3xl font-black tracking-tight">
+                <span>🎉</span>
+                <span>Level {level} Complete!</span>
+              </div>
+              <p className="text-xs sm:text-sm font-semibold opacity-95">
+                {wpm > 0 ? `${wpm} WPM • ` : ""}{accuracy}% Accuracy • {totalClaks} keystrokes
+              </p>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-xs opacity-90 animate-pulse flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                  Moving to Level {level + 1} automatically...
+                </span>
+                <button
+                  type="button"
+                  onClick={advanceToNextLevel}
+                  className="px-3.5 py-1.5 rounded-xl bg-white text-emerald-800 text-xs font-black shadow-md hover:bg-emerald-50 active:scale-95 transition-all cursor-pointer"
+                >
+                  Next Phase &rarr;
+                </button>
+              </div>
+            </motion.div>
+          ) : activeMode === "zen" ? (
             <div className="min-h-[100px] flex flex-col items-center justify-center">
               <p className="text-xs font-mono text-slate-400 mb-2">
                 Type freely on your keyboard below to test keystrokes and switch sound:
