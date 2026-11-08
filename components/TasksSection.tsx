@@ -110,12 +110,36 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
     });
   }, [tasks, searchQuery, selectedCategory]);
 
+  const hoverScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleScroll = (direction: "left" | "right") => {
     if (scrollContainerRef.current) {
-      const scrollAmount = direction === "left" ? -320 : 320;
+      const scrollAmount = direction === "left" ? -360 : 360;
       scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
+
+  const startHoverScroll = (direction: "left" | "right") => {
+    stopHoverScroll();
+    handleScroll(direction);
+    hoverScrollIntervalRef.current = setInterval(() => {
+      if (scrollContainerRef.current) {
+        const step = direction === "left" ? -360 : 360;
+        scrollContainerRef.current.scrollBy({ left: step, behavior: "smooth" });
+      }
+    }, 450);
+  };
+
+  const stopHoverScroll = () => {
+    if (hoverScrollIntervalRef.current) {
+      clearInterval(hoverScrollIntervalRef.current);
+      hoverScrollIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => stopHoverScroll();
+  }, []);
 
   return (
     <section id="my-tasks" className="py-24 relative overflow-hidden bg-transparent border-t border-slate-200">
@@ -208,19 +232,27 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
               />
             </div>
 
-            {/* Slider Navigation Buttons */}
-            <div className="hidden sm:flex items-center gap-1.5">
+            {/* Slider Navigation Buttons (Click or Hover to advance next) */}
+            <div className="flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={() => handleScroll("left")}
-                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 shadow-xs transition-colors"
-                aria-label="Scroll left"
+                onMouseEnter={() => startHoverScroll("left")}
+                onMouseLeave={stopHoverScroll}
+                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-900 hover:text-white text-slate-700 shadow-xs transition-colors cursor-pointer"
+                aria-label="Scroll left (hover to scroll)"
+                title="Hover or click to scroll previous"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
+                type="button"
                 onClick={() => handleScroll("right")}
-                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 shadow-xs transition-colors"
-                aria-label="Scroll right"
+                onMouseEnter={() => startHoverScroll("right")}
+                onMouseLeave={stopHoverScroll}
+                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-900 hover:text-white text-slate-700 shadow-xs transition-colors cursor-pointer"
+                aria-label="Scroll right (hover to scroll)"
+                title="Hover or click to scroll next"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -228,48 +260,77 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
           </div>
         </div>
 
-        {/* Horizontal Overlapping Deck with Slide-in from Left Animation */}
-        <div
-          ref={scrollContainerRef}
-          className="relative w-full overflow-x-auto pb-14 pt-8 px-2 sm:px-6 scroll-smooth"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {filteredTasks.length > 0 ? (
-            <div className="flex items-center justify-start lg:justify-center min-w-max pl-4 pr-16 -space-x-12 sm:-space-x-16 md:-space-x-20">
-              {filteredTasks.map((task, index) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  total={filteredTasks.length}
-                  onViewPdf={onViewPdf}
-                  onRequestDelete={(t) => setTaskToDelete(t)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm max-w-md mx-auto">
-              <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-slate-800 mb-1">No tasks found</h3>
-              <p className="text-xs text-slate-500 mb-4">
-                Try adjusting your search query or selected filter.
-              </p>
-              <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("All");
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
-              >
-                Reset Filters
-              </button>
-            </div>
-          )}
+        {/* Horizontal Carousel with ZERO overlapping & Hover-to-Next side controls */}
+        <div className="relative group/deck">
+          {/* Floating Left Side Arrow (Hover or click to slide next) */}
+          <button
+            type="button"
+            onClick={() => handleScroll("left")}
+            onMouseEnter={() => startHoverScroll("left")}
+            onMouseLeave={stopHoverScroll}
+            className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 hover:bg-slate-900 hover:text-white text-slate-800 shadow-xl border border-slate-200 backdrop-blur-md items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer opacity-80 hover:opacity-100"
+            aria-label="Previous card (hover to scroll)"
+            title="Hover or click to scroll previous"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          {/* Floating Right Side Arrow (Hover or click to slide next) */}
+          <button
+            type="button"
+            onClick={() => handleScroll("right")}
+            onMouseEnter={() => startHoverScroll("right")}
+            onMouseLeave={stopHoverScroll}
+            className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 hover:bg-slate-900 hover:text-white text-slate-800 shadow-xl border border-slate-200 backdrop-blur-md items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer opacity-80 hover:opacity-100"
+            aria-label="Next card (hover to scroll)"
+            title="Hover or click to scroll next"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          <div
+            ref={scrollContainerRef}
+            className="relative w-full overflow-x-auto pb-10 pt-4 px-2 sm:px-6 scroll-smooth"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {filteredTasks.length > 0 ? (
+              /* Non-overlapping clean card layout with proper gap */
+              <div className="flex items-stretch justify-start min-w-max px-2 sm:px-4 gap-6 sm:gap-8">
+                {filteredTasks.map((task, index) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    index={index}
+                    total={filteredTasks.length}
+                    onViewPdf={onViewPdf}
+                    onRequestDelete={(t) => setTaskToDelete(t)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm max-w-md mx-auto">
+                <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-800 mb-1">No tasks found</h3>
+                <p className="text-xs text-slate-500 mb-4">
+                  Try adjusting your search query or selected filter.
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("All");
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Quick hint for interaction */}
         <div className="text-center text-xs text-slate-400 mt-2 flex items-center justify-center gap-1.5">
-          <span>&larr; Scroll or hover over cards to expand from deck &rarr;</span>
+          <span>&larr; Hover over arrows to continuously scroll next &rarr;</span>
         </div>
       </div>
 

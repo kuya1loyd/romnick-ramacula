@@ -33,22 +33,20 @@ export default function TaskCard({
 }: TaskCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -120, rotate: -2 }}
-      whileInView={{ opacity: 1, x: 0, rotate: 0 }}
+      initial={{ opacity: 0, y: 25 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{
-        duration: 0.65,
-        delay: index * 0.15,
+        duration: 0.5,
+        delay: index * 0.1,
         ease: [0.22, 1, 0.36, 1],
       }}
       whileHover={{
-        y: -28,
-        scale: 1.03,
-        zIndex: 40,
-        transition: { duration: 0.25, ease: "easeOut" },
+        y: -10,
+        scale: 1.02,
+        transition: { duration: 0.2, ease: "easeOut" },
       }}
-      style={{ zIndex: index + 1 }}
-      className={`relative shrink-0 w-[280px] sm:w-[310px] md:w-[330px] h-[520px] sm:h-[560px] rounded-[2rem] p-5 sm:p-6 border flex flex-col justify-between shadow-xl transition-shadow duration-300 ${task.cardColor.bg} ${task.cardColor.border}`}
+      className={`relative shrink-0 w-[290px] sm:w-[320px] md:w-[340px] h-[520px] sm:h-[560px] rounded-[2rem] p-5 sm:p-6 border flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 ${task.cardColor.bg} ${task.cardColor.border}`}
     >
       {/* Top Preview Card (Showing Real Front Page Preview of Website & PDF) */}
       <div>
