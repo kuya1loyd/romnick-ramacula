@@ -127,8 +127,8 @@ export default function JourneyGallery() {
             Upload photos of academic milestones, classroom experiences, and record the personal meaning behind each moment.
           </motion.p>
 
-          {/* Upload Button */}
-          {hasLoaded && (
+          {/* Upload Button (only shown in header when items exist, preventing duplicate buttons in empty state) */}
+          {hasLoaded && items.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
