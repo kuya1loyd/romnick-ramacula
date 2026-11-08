@@ -107,7 +107,7 @@ export default function EducationBackgroundEffects() {
               delay: item.delay,
               ease: "easeInOut",
             }}
-            className={`opacity-60 drop-shadow-sm ${item.color}`}
+            className={`opacity-60 drop-shadow-sm ${item.color} hidden md:block`}
           >
             <div className="p-2.5 rounded-2xl bg-white/60 border border-slate-200/70 shadow-sm">
               <IconComp size={item.size} strokeWidth={2.2} />
@@ -135,7 +135,7 @@ export default function EducationBackgroundEffects() {
             delay: badge.delay,
             ease: "easeInOut",
           }}
-          className="opacity-60 px-3.5 py-1.5 rounded-full border border-slate-300 bg-white/70 font-mono text-xs font-black text-slate-800 tracking-wider shadow-xs"
+          className="opacity-60 px-3.5 py-1.5 rounded-full border border-slate-300 bg-white/70 font-mono text-xs font-black text-slate-800 tracking-wider shadow-xs hidden md:block"
         >
           {badge.text}
         </motion.div>
@@ -146,7 +146,7 @@ export default function EducationBackgroundEffects() {
         {[...Array(14)].map((_, i) => (
           <motion.div
             key={`particle-${i}`}
-            className="absolute rounded-full border border-indigo-300/60 bg-gradient-to-tr from-indigo-200/50 via-purple-200/40 to-amber-200/40"
+            className="absolute rounded-full border border-indigo-300/60 bg-gradient-to-tr from-indigo-200/50 via-purple-200/40 to-amber-200/40 hidden sm:block"
             style={{
               width: 12 + (i % 4) * 8,
               height: 12 + (i % 4) * 8,

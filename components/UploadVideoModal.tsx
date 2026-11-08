@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Video, Upload, Link as LinkIcon, Check, Film, Smartphone, Monitor, Trash2, CheckCircle2, Loader2 } from "lucide-react";
+import { X, Video, Upload, Link as LinkIcon, Check, Film, Smartphone, Monitor, Trash2, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { saveVideoToDb } from "@/lib/videoDb";
 
 export interface VideoReportItem {
@@ -77,8 +77,8 @@ export default function UploadVideoModal({
   onClose,
   onAddVideo,
 }: UploadVideoModalProps) {
-  // Input Method: "device" (from PC / Phone) or "link" (URL)
-  const [sourceType, setSourceType] = useState<"device" | "link">("device");
+  // Input Method: "link" (URL - Recommended for mobile/cross-device) or "device" (from PC / Phone)
+  const [sourceType, setSourceType] = useState<"link" | "device">("link");
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("TTL Coursework");
   const [duration, setDuration] = useState("Video Presentation");
@@ -265,41 +265,73 @@ export default function UploadVideoModal({
             >
               {/* Scrollable Form Body */}
               <div className="overflow-y-auto px-5 sm:px-6 py-4 space-y-4 text-xs flex-1">
-                {/* Method Selector: From PC/Phone vs Video Link */}
+                {/* Method Selector: Video Link (Recommended) vs From PC/Phone */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    Video Source
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      Video Source
+                    </label>
+                    <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                      YouTube & Drive work on all phones
+                    </span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => setSourceType("device")}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        sourceType === "device"
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                      onClick={() => setSourceType("link")}
+                      className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        sourceType === "link"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-300"
                           : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                     >
-                      <Upload className="w-4 h-4" />
-                      <span>From PC / Phone</span>
+                      <LinkIcon className="w-4 h-4 shrink-0" />
+                      <span>Web Link (YouTube / Drive)</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSourceType("link")}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        sourceType === "link"
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                      onClick={() => setSourceType("device")}
+                      className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        sourceType === "device"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-300"
                           : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                       }`}
                     >
-                      <LinkIcon className="w-4 h-4" />
-                      <span>Web Link / URL</span>
+                      <Upload className="w-4 h-4 shrink-0" />
+                      <span>From PC / Phone Files</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Device Video File Upload Area */}
-                {sourceType === "device" ? (
+                {/* Web Link URL Input (Recommended) */}
+                {sourceType === "link" ? (
+                  <div className="space-y-2">
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      YouTube or Google Drive URL *
+                    </label>
+                    <div className="relative">
+                      <LinkIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="url"
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=... or Google Drive link"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 text-xs"
+                      />
+                    </div>
+                    <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-[11px] text-slate-600 leading-relaxed space-y-1">
+                      <p className="font-bold text-indigo-700 flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        Best for large presentations (e.g. 100MB - 1GB+):
+                      </p>
+                      <ul className="list-disc list-inside space-y-0.5 text-slate-600 text-[10.5px]">
+                        <li><strong>YouTube</strong>: Upload video as <em>Unlisted</em> (private to your portfolio) or <em>Public</em>. Plays instantly on 100% of mobile phones.</li>
+                        <li><strong>Google Drive</strong>: Share video &gt; set to <em>&quot;Anyone with the link can view&quot;</em> &gt; paste link here.</li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  /* Device Video File Upload Area */
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                       Select Video File from your PC or Cellphone *
@@ -333,7 +365,7 @@ export default function UploadVideoModal({
                                 {fileName}
                               </p>
                               <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">
-                                Video ready for upload • {fileSizeStr}
+                                Video ready • {fileSizeStr}
                               </p>
                             </div>
                           </div>
@@ -355,6 +387,18 @@ export default function UploadVideoModal({
                             </button>
                           </div>
                         </div>
+
+                        {/* Large File Warning */}
+                        {selectedFile.size > 50 * 1024 * 1024 && (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 leading-relaxed">
+                            <p className="font-bold flex items-center gap-1.5 text-amber-800 mb-1">
+                              <span>⚠️</span> Large Video Notice ({fileSizeStr}):
+                            </p>
+                            <p className="text-[10.5px] text-amber-800">
+                              Direct files are stored in this device&apos;s browser memory. Because of its large size, other devices or phones will not be able to load it. For the best experience, consider uploading this file to <strong>YouTube (Unlisted)</strong> or <strong>Google Drive</strong> and using the <strong>Web Link</strong> tab above.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       /* Drag & Drop / Tap to Choose Box */
@@ -393,23 +437,6 @@ export default function UploadVideoModal({
                         </p>
                       </div>
                     )}
-                  </div>
-                ) : (
-                  /* Web Link URL Input */
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Video URL (YouTube, Vimeo, Drive, or MP4 Link) *
-                    </label>
-                    <div className="relative">
-                      <LinkIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="url"
-                        value={videoUrl}
-                        onChange={(e) => setVideoUrl(e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=... or Google Drive link"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 text-xs"
-                      />
-                    </div>
                   </div>
                 )}
 

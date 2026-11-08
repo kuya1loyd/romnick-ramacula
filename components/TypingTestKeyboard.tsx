@@ -113,6 +113,32 @@ export default function TypingTestKeyboard() {
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const keyboardContainerRef = useRef<HTMLDivElement | null>(null);
+  const chassisRef = useRef<HTMLDivElement | null>(null);
+  const [keyboardScale, setKeyboardScale] = useState(1);
+  const [keyboardHeight, setKeyboardHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (keyboardContainerRef.current) {
+        const containerWidth = keyboardContainerRef.current.clientWidth;
+        const baseWidth = 640;
+        if (containerWidth < baseWidth) {
+          const scale = Math.min(1, Math.max(0.44, containerWidth / baseWidth));
+          setKeyboardScale(scale);
+        } else {
+          setKeyboardScale(1);
+        }
+      }
+      if (chassisRef.current) {
+        setKeyboardHeight(chassisRef.current.offsetHeight);
+      }
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
 
   const currentTheme = SWITCH_THEMES[switchType];
 
@@ -353,11 +379,12 @@ export default function TypingTestKeyboard() {
   };
 
   return (
-    <section className="py-20 relative bg-transparent border-t border-slate-200 overflow-hidden">
-      {/* Hidden input to guarantee keyboard typing always registers without causing viewport jumps */}
+    <section id="typing-test" className="py-12 sm:py-20 relative bg-white/95 backdrop-blur-md border-t border-slate-200/90 overflow-hidden scroll-mt-24">
+      {/* Hidden input to guarantee keyboard typing always registers without causing viewport jumps or virtual keyboard popups */}
       <input
         ref={inputRef}
         type="text"
+        inputMode="none"
         className="opacity-0 pointer-events-none fixed top-0 left-0 w-1 h-1 -z-50"
         aria-hidden="true"
         tabIndex={-1}
@@ -544,26 +571,43 @@ export default function TypingTestKeyboard() {
 
         {/* Realistic Mechanical Keyboard Layout with Dynamic Theme Colors & RGB Underglow */}
         <div className="relative max-w-4xl mx-auto select-none isolate">
-          {/* Mobile swipe helper hint */}
-          <div className="sm:hidden text-center text-[11px] text-slate-400 mb-2">
-            ⇄ Swipe horizontally to access the complete keyboard layout
+          {/* Mobile helper hint */}
+          <div className="sm:hidden text-center text-[11px] text-slate-500 mb-2.5 font-medium">
+            Interactive Mechanical Keyboard • Tap keys to test switches & sounds
           </div>
 
-          <div className="overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="min-w-[560px] sm:min-w-0 relative">
+          <div
+            ref={keyboardContainerRef}
+            className="w-full flex justify-center items-start overflow-hidden pt-1 pb-1"
+            style={{
+              height:
+                keyboardScale < 1 && keyboardHeight
+                  ? `${Math.ceil(keyboardHeight * keyboardScale) + 6}px`
+                  : "auto",
+            }}
+          >
+            <div
+              ref={chassisRef}
+              style={{
+                width: 640,
+                transform: `scale(${keyboardScale})`,
+                transformOrigin: "top center",
+              }}
+              className="relative shrink-0 transition-transform duration-150"
+            >
               {/* RGB Underglow Halo Animation (Around the Chassis) */}
               {rgbEnabled && (
                 <>
                   {/* Outer 360-degree Chroma Aura */}
-                  <div className="absolute -inset-4 sm:-inset-6 rounded-[3.2rem] rgb-underglow blur-2xl opacity-90 -z-10 pointer-events-none transition-opacity duration-500 rgb-active-pulse" />
+                  <div className="absolute -inset-3 sm:-inset-6 rounded-[2.5rem] sm:rounded-[3.2rem] rgb-underglow blur-xl sm:blur-2xl opacity-80 sm:opacity-90 -z-10 pointer-events-none transition-opacity duration-500 rgb-active-pulse" />
                   {/* Edge Diffused Backlight */}
-                  <div className="absolute -inset-1.5 sm:-inset-2 rounded-[2.8rem] rgb-underglow blur-md opacity-80 -z-10 pointer-events-none transition-opacity duration-500" />
+                  <div className="absolute -inset-1 sm:-inset-2 rounded-[2.2rem] sm:rounded-[2.8rem] rgb-underglow blur-sm sm:blur-md opacity-75 sm:opacity-80 -z-10 pointer-events-none transition-opacity duration-500" />
                 </>
               )}
 
               {/* Keyboard Chassis with Dynamic Theme Color */}
               <div
-                className={`relative p-4 sm:p-6 rounded-[2.5rem] border-4 shadow-2xl transition-all duration-500 overflow-hidden ${currentTheme.chassisBg} ${currentTheme.chassisBorder}`}
+                className={`relative p-3.5 sm:p-6 rounded-[2.2rem] sm:rounded-[2.5rem] border-3 sm:border-4 shadow-2xl transition-all duration-500 overflow-hidden ${currentTheme.chassisBg} ${currentTheme.chassisBorder}`}
               >
             {/* Top Bezel Glowing RGB Light Strip - fixed layout height so keys never shift */}
             <div
@@ -832,11 +876,11 @@ export default function TypingTestKeyboard() {
             </button>
           </div>
 
-          {/* Fixed-height Theme status badge: always centered below, never pushes or wraps buttons */}
-          <div className="h-5 flex items-center justify-center gap-2 text-slate-500 font-medium select-none">
+          {/* Responsive Theme status badge: wraps cleanly on small screens, never overlaps */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-center text-slate-500 font-medium select-none py-1">
             <span className="font-extrabold text-slate-800">Theme: {currentTheme.name}</span>
-            <span className="text-slate-300">•</span>
-            <span className="text-slate-500">{currentTheme.desc}</span>
+            <span className="hidden sm:inline text-slate-300">•</span>
+            <span className="text-slate-500 text-[11px] sm:text-xs">{currentTheme.desc}</span>
           </div>
         </div>
       </div>

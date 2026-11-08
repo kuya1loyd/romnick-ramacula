@@ -50,8 +50,15 @@ export async function POST(req: NextRequest) {
         ${item.thumbnail || null}
       ) ON CONFLICT (id) DO UPDATE SET
         title = EXCLUDED.title,
+        subject = EXCLUDED.subject,
+        date = EXCLUDED.date,
+        duration = EXCLUDED.duration,
         description = EXCLUDED.description,
+        instructor = EXCLUDED.instructor,
         video_url = EXCLUDED.video_url,
+        file_name = EXCLUDED.file_name,
+        file_size = EXCLUDED.file_size,
+        is_local_file = EXCLUDED.is_local_file,
         thumbnail = EXCLUDED.thumbnail
     `;
 
