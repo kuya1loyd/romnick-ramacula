@@ -347,9 +347,9 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
         isOpen={!!taskToDelete}
         title={taskToDelete?.title || ""}
         itemType="Task / Activity"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (taskToDelete) {
-            handleDeleteTask(taskToDelete.id);
+            await handleDeleteTask(taskToDelete.id);
             setTaskToDelete(null);
           }
         }}

@@ -263,9 +263,9 @@ export default function VideoReports() {
         isOpen={!!reportToDelete}
         title={reportToDelete?.title || ""}
         itemType="Video Report"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (reportToDelete) {
-            handleDelete(reportToDelete.id);
+            await handleDelete(reportToDelete.id);
             setReportToDelete(null);
           }
         }}

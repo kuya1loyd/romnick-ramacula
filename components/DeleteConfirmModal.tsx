@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, AlertTriangle, X } from "lucide-react";
+import { Trash2, AlertTriangle, X, Loader2 } from "lucide-react";
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
   title: string;
   itemType?: string;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void> | void;
   onClose: () => void;
 }
 
@@ -19,10 +19,12 @@ export default function DeleteConfirmModal({
   onConfirm,
   onClose,
 }: DeleteConfirmModalProps) {
-  // Close on Escape key
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Close on Escape key (disabled while deleting)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !isDeleting) {
         onClose();
       }
     };
@@ -34,7 +36,30 @@ export default function DeleteConfirmModal({
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, isDeleting, onClose]);
+
+  // Reset isDeleting when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setIsDeleting(false);
+    }
+  }, [isOpen]);
+
+  const handleDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await Promise.all([
+        Promise.resolve(onConfirm()),
+        new Promise((resolve) => setTimeout(resolve, 750)),
+      ]);
+      onClose();
+    } catch (err) {
+      console.error("Failed to delete item:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -48,10 +73,24 @@ export default function DeleteConfirmModal({
             onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 overflow-hidden"
           >
+            {/* Prominent Active Deleting Overlay */}
+            {isDeleting && (
+              <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center gap-3.5 p-6 animate-in fade-in duration-200">
+                <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
+                  <Loader2 className="w-7 h-7 animate-spin" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-slate-900">Deleting from Cloud Database...</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Please wait while changes sync</p>
+                </div>
+              </div>
+            )}
+
             {/* Top Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              disabled={isDeleting}
+              className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -79,20 +118,28 @@ export default function DeleteConfirmModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer text-center"
+                disabled={isDeleting}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 disabled:opacity-50 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer text-center"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  onConfirm();
-                  onClose();
-                }}
-                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                disabled={isDeleting}
+                onClick={handleDelete}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <Trash2 className="w-4 h-4" />
-                <span>Yes, Delete</span>
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Yes, Delete</span>
+                  </>
+                )}
               </button>
             </div>
           </motion.div>

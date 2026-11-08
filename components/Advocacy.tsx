@@ -222,9 +222,9 @@ export default function Advocacy() {
         isOpen={!!advocacyToDelete}
         title={advocacyToDelete?.title || ""}
         itemType="Advocacy Initiative"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (advocacyToDelete) {
-            handleDelete(advocacyToDelete.id);
+            await handleDelete(advocacyToDelete.id);
             setAdvocacyToDelete(null);
           }
         }}

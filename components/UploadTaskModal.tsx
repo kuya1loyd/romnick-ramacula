@@ -147,7 +147,10 @@ export default function UploadTaskModal({
         previewImage: coverImage || undefined,
       };
 
-      await onAddTask(newTask);
+      await Promise.all([
+        Promise.resolve(onAddTask(newTask)),
+        new Promise((resolve) => setTimeout(resolve, 800)),
+      ]);
       onClose();
 
       // Reset form
@@ -176,6 +179,18 @@ export default function UploadTaskModal({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[88vh] overflow-hidden"
           >
+            {/* Active Saving / Uploading Overlay */}
+            {isSubmitting && (
+              <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center gap-3.5 p-6 animate-in fade-in duration-200">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shadow-sm">
+                  <Loader2 className="w-7 h-7 animate-spin" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-slate-900">Uploading & Saving to Cloud Database...</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Please wait while your task is synced</p>
+                </div>
+              </div>
+            )}
             {/* Header (Always Visible at Top) */}
             <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
               <div className="flex items-center gap-2.5">

@@ -308,9 +308,9 @@ export default function JourneyGallery() {
         isOpen={!!itemToDelete}
         title={itemToDelete?.title || ""}
         itemType="Journey Photo"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (itemToDelete) {
-            handleDelete(itemToDelete.id);
+            await handleDelete(itemToDelete.id);
             setItemToDelete(null);
           }
         }}
