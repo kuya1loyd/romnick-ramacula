@@ -57,9 +57,13 @@ export default function VideoPlayerModal({ report, onClose, onUpdateLink }: Vide
         console.warn("Could not retrieve video from IndexedDB:", err);
       }
 
-      // Direct fallback to report.videoUrl
+      // Direct fallback to report.videoUrl (ignore dead blob: URLs from other sessions)
       if (!isCancelled) {
-        setResolvedUrl(report.videoUrl || "");
+        if (report.videoUrl && !report.videoUrl.startsWith("blob:")) {
+          setResolvedUrl(report.videoUrl);
+        } else {
+          setResolvedUrl("");
+        }
         setIsLoading(false);
       }
     };
@@ -136,7 +140,7 @@ export default function VideoPlayerModal({ report, onClose, onUpdateLink }: Vide
                 <button
                   type="button"
                   onClick={() => onUpdateLink(report)}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
                   title="Update video with YouTube or Google Drive URL"
                 >
                   <LinkIcon className="w-3.5 h-3.5 text-indigo-400" />
@@ -176,10 +180,10 @@ export default function VideoPlayerModal({ report, onClose, onUpdateLink }: Vide
                 allowFullScreen
                 className="w-full h-full border-0"
               />
-            ) : currentVideoSrc ? (
+            ) : resolvedUrl ? (
               <video
-                key={currentVideoSrc}
-                src={currentVideoSrc}
+                key={resolvedUrl}
+                src={resolvedUrl}
                 controls
                 playsInline
                 autoPlay
@@ -188,9 +192,26 @@ export default function VideoPlayerModal({ report, onClose, onUpdateLink }: Vide
                 Your browser does not support the video tag.
               </video>
             ) : (
-              <div className="flex flex-col items-center justify-center p-6 text-slate-400 text-center">
-                <Video className="w-10 h-10 text-slate-600 mb-2" />
-                <p className="text-xs text-slate-400">No video stream available</p>
+              <div className="flex flex-col items-center justify-center p-6 text-center max-w-sm">
+                <div className="w-12 h-12 rounded-full bg-indigo-500/15 text-indigo-400 flex items-center justify-center mb-3">
+                  <Video className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-white mb-1">
+                  Online Video Link Required
+                </h4>
+                <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                  To stream this video on mobile & share with your instructor, attach a YouTube or Google Drive link.
+                </p>
+                {onUpdateLink && (
+                  <button
+                    type="button"
+                    onClick={() => onUpdateLink(report)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg transition-colors cursor-pointer"
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    <span>Paste YouTube or Google Drive Link</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
