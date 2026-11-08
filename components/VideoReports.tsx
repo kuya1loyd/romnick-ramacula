@@ -15,7 +15,7 @@ export default function VideoReports() {
   const [activePlayingReport, setActivePlayingReport] = useState<VideoReportItem | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Load from localStorage on mount
+  // Load from Cloud Database (with localStorage fallback)
   useEffect(() => {
     try {
       const saved = localStorage.getItem("romnick_video_reports");
@@ -25,11 +25,28 @@ export default function VideoReports() {
     } catch (e) {
       console.error(e);
     }
-    setHasLoaded(true);
+
+    fetch("/api/videos")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setReports(data);
+          try {
+            const sanitized = data.map((r: VideoReportItem) =>
+              r.isLocalFile ? { ...r, videoUrl: undefined } : r
+            );
+            localStorage.setItem("romnick_video_reports", JSON.stringify(sanitized));
+          } catch {
+            // ignore
+          }
+        }
+      })
+      .catch((err) => console.error("Cloud DB video fetch error:", err))
+      .finally(() => setHasLoaded(true));
   }, []);
 
-  // Save to localStorage when changed (without storing ephemeral blob URLs)
-  const handleAddVideo = (newReport: VideoReportItem) => {
+  // Save to Cloud Database and localStorage
+  const handleAddVideo = async (newReport: VideoReportItem) => {
     const updated = [newReport, ...reports];
     setReports(updated);
     try {
@@ -40,9 +57,19 @@ export default function VideoReports() {
     } catch (e) {
       console.error(e);
     }
+
+    try {
+      await fetch("/api/videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newReport),
+      });
+    } catch (err) {
+      console.error("Cloud DB video save error:", err);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const updated = reports.filter((r) => r.id !== id);
     setReports(updated);
     try {
@@ -53,6 +80,14 @@ export default function VideoReports() {
       deleteVideoFromDb(id);
     } catch (e) {
       console.error(e);
+    }
+
+    try {
+      await fetch(`/api/videos?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Cloud DB video delete error:", err);
     }
   };
 

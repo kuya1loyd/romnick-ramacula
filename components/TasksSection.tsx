@@ -20,7 +20,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Load tasks from localStorage (defaults to tasksData on first visit)
+  // Load tasks from cloud database API (with localStorage cache fallback)
   useEffect(() => {
     try {
       const savedActive = localStorage.getItem("romnick_active_tasks");
@@ -28,26 +28,29 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
         const parsed = JSON.parse(savedActive);
         if (Array.isArray(parsed)) {
           setTasks(parsed);
-          return;
-        }
-      }
-      // Migrate from previous key if present
-      const oldSaved = localStorage.getItem("romnick_user_tasks");
-      if (oldSaved) {
-        const parsed = JSON.parse(oldSaved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const combined = [...tasksData, ...parsed];
-          setTasks(combined);
-          localStorage.setItem("romnick_active_tasks", JSON.stringify(combined));
-          return;
         }
       }
     } catch (e) {
       console.error(e);
     }
+
+    // Fetch live from Cloud Database
+    fetch("/api/tasks")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTasks(data);
+          try {
+            localStorage.setItem("romnick_active_tasks", JSON.stringify(data));
+          } catch {
+            // ignore
+          }
+        }
+      })
+      .catch((err) => console.error("Cloud DB fetch error:", err));
   }, []);
 
-  const handleAddTask = (newTask: Task) => {
+  const handleAddTask = async (newTask: Task) => {
     const updated = [...tasks, newTask];
     setTasks(updated);
     try {
@@ -55,15 +58,35 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
     } catch (e) {
       console.error(e);
     }
+
+    // Save permanently to Cloud Database
+    try {
+      await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTask),
+      });
+    } catch (err) {
+      console.error("Cloud DB save error:", err);
+    }
   };
 
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = async (id: string) => {
     const updated = tasks.filter((t) => t.id !== id);
     setTasks(updated);
     try {
       localStorage.setItem("romnick_active_tasks", JSON.stringify(updated));
     } catch (e) {
       console.error(e);
+    }
+
+    // Delete permanently from Cloud Database
+    try {
+      await fetch(`/api/tasks?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Cloud DB delete error:", err);
     }
   };
 

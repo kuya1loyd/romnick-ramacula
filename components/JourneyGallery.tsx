@@ -35,28 +35,54 @@ export default function JourneyGallery() {
   const [itemToDelete, setItemToDelete] = useState<JourneyItem | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Load from IndexedDB on mount (clears old default sample items)
+  // Load from Cloud Database and IndexedDB on mount
   useEffect(() => {
-    // Clear legacy localStorage cache that had pre-added sample cards
-    try {
-      localStorage.removeItem("romnick_journey_gallery");
-    } catch {
-      // ignore
-    }
-
+    // 1. Instant local IndexedDB load
     getAllJourneyRecords().then((saved) => {
-      setItems(saved);
-      setHasLoaded(true);
+      if (Array.isArray(saved) && saved.length > 0) {
+        setItems(saved);
+      }
     });
+
+    // 2. Live Cloud Database load
+    fetch("/api/gallery")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setItems(data);
+        }
+      })
+      .catch((err) => console.error("Cloud DB gallery fetch error:", err))
+      .finally(() => setHasLoaded(true));
   }, []);
 
-  const handleAddJourney = (newItem: JourneyItem) => {
+  const handleAddJourney = async (newItem: JourneyItem) => {
     setItems((prev) => [newItem, ...prev]);
+
+    // Save to Cloud Database
+    try {
+      await fetch("/api/gallery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newItem),
+      });
+    } catch (err) {
+      console.error("Cloud DB gallery save error:", err);
+    }
   };
 
   const handleDelete = async (id: string) => {
     await deleteJourneyRecord(id);
     setItems((prev) => prev.filter((i) => i.id !== id));
+
+    // Delete from Cloud Database
+    try {
+      await fetch(`/api/gallery?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Cloud DB gallery delete error:", err);
+    }
   };
 
   // Filter items

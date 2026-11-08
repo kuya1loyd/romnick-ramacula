@@ -20,7 +20,7 @@ export default function Advocacy() {
   const [advocacyToDelete, setAdvocacyToDelete] = useState<AdvocacyItem | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Load from localStorage on mount
+  // Load from Cloud Database (with localStorage fallback)
   useEffect(() => {
     try {
       const saved = localStorage.getItem("romnick_advocacies");
@@ -30,10 +30,24 @@ export default function Advocacy() {
     } catch (e) {
       console.error(e);
     }
-    setHasLoaded(true);
+
+    fetch("/api/advocacy")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setAdvocacies(data);
+          try {
+            localStorage.setItem("romnick_advocacies", JSON.stringify(data));
+          } catch {
+            // ignore
+          }
+        }
+      })
+      .catch((err) => console.error("Cloud DB advocacy fetch error:", err))
+      .finally(() => setHasLoaded(true));
   }, []);
 
-  const handleAddAdvocacy = (newItem: AdvocacyItem) => {
+  const handleAddAdvocacy = async (newItem: AdvocacyItem) => {
     const updated = [newItem, ...advocacies];
     setAdvocacies(updated);
     try {
@@ -41,15 +55,33 @@ export default function Advocacy() {
     } catch (e) {
       console.error(e);
     }
+
+    try {
+      await fetch("/api/advocacy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newItem),
+      });
+    } catch (err) {
+      console.error("Cloud DB advocacy save error:", err);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const updated = advocacies.filter((item) => item.id !== id);
     setAdvocacies(updated);
     try {
       localStorage.setItem("romnick_advocacies", JSON.stringify(updated));
     } catch (e) {
       console.error(e);
+    }
+
+    try {
+      await fetch(`/api/advocacy?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Cloud DB advocacy delete error:", err);
     }
   };
 
