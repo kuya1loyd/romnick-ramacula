@@ -57,9 +57,7 @@ export default function JourneyGallery() {
   }, []);
 
   const handleAddJourney = async (newItem: JourneyItem) => {
-    setItems((prev) => [newItem, ...prev]);
-
-    // Save to Cloud Database
+    // Save to Cloud Database first
     try {
       await fetch("/api/gallery", {
         method: "POST",
@@ -69,6 +67,9 @@ export default function JourneyGallery() {
     } catch (err) {
       console.error("Cloud DB gallery save error:", err);
     }
+
+    // Add to state only when successfully persisted
+    setItems((prev) => [newItem, ...prev]);
   };
 
   const handleDelete = async (id: string) => {
@@ -233,23 +234,23 @@ export default function JourneyGallery() {
                       </div>
 
                       {/* Title */}
-                      <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-2 mb-3 leading-snug">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-2 mb-3 leading-snug break-words [overflow-wrap:anywhere]">
                         {item.title}
                       </h3>
 
                       {/* Meaning Highlight Box */}
-                      <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-100 text-slate-800 mb-3">
+                      <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-100 text-slate-800 mb-3 min-w-0 overflow-hidden">
                         <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">
                           <Quote className="w-3 h-3" />
                           <span>Meaning</span>
                         </div>
-                        <p className="text-xs font-semibold text-slate-800 italic line-clamp-2">
+                        <p className="text-xs font-semibold text-slate-800 italic line-clamp-2 break-words [overflow-wrap:anywhere]">
                           &ldquo;{item.meaning}&rdquo;
                         </p>
                       </div>
 
                       {/* Short Description */}
-                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed break-words [overflow-wrap:anywhere]">
                         {item.description}
                       </p>
                     </div>

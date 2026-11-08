@@ -51,15 +51,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
   }, []);
 
   const handleAddTask = async (newTask: Task) => {
-    const updated = [...tasks, newTask];
-    setTasks(updated);
-    try {
-      localStorage.setItem("romnick_active_tasks", JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
-
-    // Save permanently to Cloud Database
+    // Save permanently to Cloud Database first
     try {
       await fetch("/api/tasks", {
         method: "POST",
@@ -68,6 +60,15 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
       });
     } catch (err) {
       console.error("Cloud DB save error:", err);
+    }
+
+    // Add to state only when upload completes
+    const updated = [...tasks, newTask];
+    setTasks(updated);
+    try {
+      localStorage.setItem("romnick_active_tasks", JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -295,7 +296,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
           >
             {filteredTasks.length > 0 ? (
               /* Non-overlapping clean card layout with proper gap */
-              <div className="flex items-stretch justify-start min-w-max px-2 sm:px-4 gap-6 sm:gap-8">
+              <div className="flex items-stretch justify-start min-w-max px-2 sm:px-4 gap-4 sm:gap-6">
                 {filteredTasks.map((task, index) => (
                   <TaskCard
                     key={task.id}

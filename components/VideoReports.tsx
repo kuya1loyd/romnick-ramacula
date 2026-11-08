@@ -47,6 +47,16 @@ export default function VideoReports() {
 
   // Save to Cloud Database and localStorage
   const handleAddVideo = async (newReport: VideoReportItem) => {
+    try {
+      await fetch("/api/videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newReport),
+      });
+    } catch (err) {
+      console.error("Cloud DB video save error:", err);
+    }
+
     const updated = [newReport, ...reports];
     setReports(updated);
     try {
@@ -56,16 +66,6 @@ export default function VideoReports() {
       localStorage.setItem("romnick_video_reports", JSON.stringify(sanitized));
     } catch (e) {
       console.error(e);
-    }
-
-    try {
-      await fetch("/api/videos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newReport),
-      });
-    } catch (err) {
-      console.error("Cloud DB video save error:", err);
     }
   };
 
@@ -179,12 +179,12 @@ export default function VideoReports() {
 
                     <h3
                       onClick={() => handlePlayVideo(report)}
-                      className="text-base font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors mb-2 cursor-pointer line-clamp-2"
+                      className="text-base font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors mb-2 cursor-pointer line-clamp-2 break-words [overflow-wrap:anywhere]"
                     >
                       {report.title}
                     </h3>
 
-                    <p className="text-xs text-slate-600 leading-relaxed mb-4 line-clamp-3">
+                    <p className="text-xs text-slate-600 leading-relaxed mb-4 line-clamp-3 break-words [overflow-wrap:anywhere]">
                       {report.description}
                     </p>
                   </div>

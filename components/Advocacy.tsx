@@ -48,14 +48,6 @@ export default function Advocacy() {
   }, []);
 
   const handleAddAdvocacy = async (newItem: AdvocacyItem) => {
-    const updated = [newItem, ...advocacies];
-    setAdvocacies(updated);
-    try {
-      localStorage.setItem("romnick_advocacies", JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
-
     try {
       await fetch("/api/advocacy", {
         method: "POST",
@@ -64,6 +56,14 @@ export default function Advocacy() {
       });
     } catch (err) {
       console.error("Cloud DB advocacy save error:", err);
+    }
+
+    const updated = [newItem, ...advocacies];
+    setAdvocacies(updated);
+    try {
+      localStorage.setItem("romnick_advocacies", JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -165,11 +165,11 @@ export default function Advocacy() {
                       {item.focus}
                     </div>
 
-                    <h3 className="text-lg font-black text-slate-900 mb-3 group-hover:text-rose-600 transition-colors">
+                    <h3 className="text-lg font-black text-slate-900 mb-3 group-hover:text-rose-600 transition-colors break-words [overflow-wrap:anywhere]">
                       {item.title}
                     </h3>
 
-                    <p className="text-sm text-slate-600 leading-relaxed font-normal">
+                    <p className="text-sm text-slate-600 leading-relaxed font-normal break-words [overflow-wrap:anywhere]">
                       {item.description}
                     </p>
                   </div>

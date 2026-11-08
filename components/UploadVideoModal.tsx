@@ -187,10 +187,7 @@ export default function UploadVideoModal({
         thumbnail: thumbnail || undefined,
       };
 
-      await Promise.all([
-        Promise.resolve(onAddVideo(newReport)),
-        new Promise((resolve) => setTimeout(resolve, 800)),
-      ]);
+      await onAddVideo(newReport);
       onClose();
 
       // Reset Form state without revoking the newly submitted object URL
@@ -214,38 +211,33 @@ export default function UploadVideoModal({
     <AnimatePresence>
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/60 backdrop-blur-sm"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[88vh] overflow-hidden"
+            className="relative w-full max-w-lg bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden"
           >
-            {/* Active Saving / Uploading Overlay */}
+            {/* Slim Animated Progress Bar when submitting */}
             {isSubmitting && (
-              <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center gap-3.5 p-6 animate-in fade-in duration-200">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-                  <Loader2 className="w-7 h-7 animate-spin" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-black text-slate-900">Uploading & Saving Video...</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Please wait while your video presentation is synced</p>
-                </div>
+              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-100 overflow-hidden z-20">
+                <div className="h-full bg-gradient-to-r from-indigo-500 via-sky-500 to-indigo-600 animate-pulse w-full"></div>
               </div>
             )}
+
             {/* Header (Always Visible at Top) */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-white shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                  <Video className="w-5 h-5" />
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                  <Video className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                  <h3 className="text-sm sm:text-base md:text-lg font-black text-slate-900 leading-tight">
                     Upload Video Report
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
+                  <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">
                     Upload from your PC/phone or paste a video link
                   </p>
                 </div>
@@ -253,7 +245,8 @@ export default function UploadVideoModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-40 transition-colors cursor-pointer"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />

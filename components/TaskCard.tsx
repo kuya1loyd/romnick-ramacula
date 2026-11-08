@@ -46,7 +46,7 @@ export default function TaskCard({
         scale: 1.02,
         transition: { duration: 0.2, ease: "easeOut" },
       }}
-      className={`relative shrink-0 w-[290px] sm:w-[320px] md:w-[340px] h-[520px] sm:h-[560px] rounded-[2rem] p-5 sm:p-6 border flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 ${task.cardColor.bg} ${task.cardColor.border}`}
+      className={`relative shrink-0 w-[265px] min-[360px]:w-[285px] sm:w-[320px] md:w-[340px] h-[500px] sm:h-[560px] rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 border flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 ${task.cardColor.bg} ${task.cardColor.border}`}
     >
       {/* Top Preview Card (Showing Real Front Page Preview of Website & PDF) */}
       <div>
@@ -115,13 +115,13 @@ export default function TaskCard({
 
         {/* Task Title */}
         <h3
-          className={`text-base sm:text-lg font-black leading-snug line-clamp-2 mb-2 ${task.cardColor.text}`}
+          className={`text-base sm:text-lg font-black leading-snug line-clamp-2 mb-2 break-words [overflow-wrap:anywhere] ${task.cardColor.text}`}
         >
           {task.title}
         </h3>
 
         {/* Short Description */}
-        <p className="text-xs text-slate-600 leading-relaxed line-clamp-3 mb-4 font-normal">
+        <p className="text-xs text-slate-600 leading-relaxed line-clamp-3 mb-4 font-normal break-words [overflow-wrap:anywhere]">
           {task.description}
         </p>
       </div>

@@ -64,25 +64,19 @@ export default function DeleteConfirmModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 overflow-hidden"
+            className="relative w-full max-w-sm sm:max-w-md bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl border border-slate-200 overflow-hidden"
           >
-            {/* Prominent Active Deleting Overlay */}
+            {/* Slim Top Animated Progress Bar when deleting */}
             {isDeleting && (
-              <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center gap-3.5 p-6 animate-in fade-in duration-200">
-                <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
-                  <Loader2 className="w-7 h-7 animate-spin" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-black text-slate-900">Deleting from Cloud Database...</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Please wait while changes sync</p>
-                </div>
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-rose-100 overflow-hidden z-20">
+                <div className="h-full bg-rose-600 animate-pulse w-full"></div>
               </div>
             )}
 
@@ -90,22 +84,22 @@ export default function DeleteConfirmModal({
             <button
               onClick={onClose}
               disabled={isDeleting}
-              className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 transition-colors cursor-pointer"
               aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* Warning Icon Badge */}
-            <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center mb-5 shadow-xs">
-              <Trash2 className="w-7 h-7" />
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center mb-4 shadow-xs">
+              <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
 
             {/* Heading & Details */}
-            <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mb-2">
               Delete {itemType}?
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5 sm:mb-6 break-words [overflow-wrap:anywhere]">
               Are you sure you want to remove{" "}
               <strong className="text-slate-950 font-bold break-words">
                 &ldquo;{title}&rdquo;
@@ -114,12 +108,12 @@ export default function DeleteConfirmModal({
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row items-center gap-2.5 sm:gap-3 w-full">
+            <div className="flex flex-col-reverse sm:flex-row items-center gap-2 sm:gap-3 w-full">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isDeleting}
-                className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 disabled:opacity-50 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer text-center"
+                className="w-full sm:flex-1 py-2.5 sm:py-3 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 disabled:opacity-50 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer text-center"
               >
                 Cancel
               </button>
@@ -127,7 +121,7 @@ export default function DeleteConfirmModal({
                 type="button"
                 disabled={isDeleting}
                 onClick={handleDelete}
-                className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full sm:flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isDeleting ? (
                   <>

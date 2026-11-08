@@ -91,17 +91,17 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-8 bg-slate-950/85 backdrop-blur-md"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-8 bg-slate-950/85 backdrop-blur-md"
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+          className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-800/80 bg-slate-950/60 shrink-0">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800/80 bg-slate-950/60 shrink-0">
             <div className="flex items-center gap-2.5 overflow-hidden mr-3">
               <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
                 <Video className="w-4 h-4" />
@@ -162,7 +162,7 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
 
           {/* Footer Metadata */}
           <div className="px-5 sm:px-6 py-4 border-t border-slate-800/80 bg-slate-950/70 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
-            <p className="line-clamp-2 max-w-xl text-slate-300 text-xs leading-relaxed">
+            <p className="line-clamp-2 max-w-xl text-slate-300 text-xs leading-relaxed break-words [overflow-wrap:anywhere]">
               {report.description}
             </p>
             <div className="flex items-center gap-3 shrink-0 text-[11px] text-slate-400 font-medium">
