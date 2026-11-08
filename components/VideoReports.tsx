@@ -190,9 +190,13 @@ export default function VideoReports() {
                   </div>
 
                   <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium truncate max-w-[170px]">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium truncate max-w-[210px]">
                       <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{report.instructor}</span>
+                      <span className="truncate">
+                        {report.instructor.toLowerCase().startsWith("instructor")
+                          ? report.instructor
+                          : `Instructor: ${report.instructor}`}
+                      </span>
                     </div>
 
                     {report.videoUrl || report.isLocalFile ? (

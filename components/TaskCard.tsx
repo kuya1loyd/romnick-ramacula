@@ -130,9 +130,13 @@ export default function TaskCard({
       <div className="pt-3 border-t border-black/5 flex flex-col gap-3">
         {/* Instructor & Date info */}
         <div className="flex items-center justify-between text-xs font-semibold">
-          <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate max-w-[180px]">
+          <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate max-w-[210px]">
             <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-            <span className="truncate">{task.instructor}</span>
+            <span className="truncate">
+              {task.instructor.toLowerCase().startsWith("instructor")
+                ? task.instructor
+                : `Instructor: ${task.instructor}`}
+            </span>
           </div>
           <span className="shrink-0 text-[11px] text-slate-500 font-medium">{task.uploadDate}</span>
         </div>

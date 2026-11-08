@@ -168,7 +168,11 @@ export default function VideoPlayerModal({ report, onClose }: VideoPlayerModalPr
             <div className="flex items-center gap-3 shrink-0 text-[11px] text-slate-400 font-medium">
               <span className="flex items-center gap-1">
                 <User className="w-3.5 h-3.5 text-indigo-400" />
-                {report.instructor}
+                <span>
+                  {report.instructor.toLowerCase().startsWith("instructor")
+                    ? report.instructor
+                    : `Instructor: ${report.instructor}`}
+                </span>
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">

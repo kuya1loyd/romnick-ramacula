@@ -85,7 +85,11 @@ export default function PdfModal({ task, onClose }: PdfModalProps) {
                   <span className="hidden sm:inline text-slate-300">•</span>
                   <span className="hidden sm:flex items-center gap-1 text-slate-600">
                     <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
-                    {task.instructor}
+                    <span>
+                      {task.instructor.toLowerCase().startsWith("instructor")
+                        ? task.instructor
+                        : `Instructor: ${task.instructor}`}
+                    </span>
                   </span>
                 </div>
               </div>
