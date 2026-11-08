@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Heart, Globe, Users, ShieldCheck, Sparkles, Check } from "lucide-react";
+import { X, Heart, Globe, Users, ShieldCheck, Sparkles, Check, Loader2 } from "lucide-react";
 
 export interface AdvocacyItem {
   id: string;
@@ -36,6 +36,7 @@ export default function UploadAdvocacyModal({
   const [focus, setFocus] = useState("Accessible Learning");
   const [description, setDescription] = useState("");
   const [selectedIcon, setSelectedIcon] = useState<AdvocacyItem["iconName"]>("Heart");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Lock background scroll
   useEffect(() => {
@@ -47,25 +48,30 @@ export default function UploadAdvocacyModal({
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) return;
+    if (!title.trim() || !description.trim() || isSubmitting) return;
 
-    const newItem: AdvocacyItem = {
-      id: `advocacy-${Date.now()}`,
-      title: title.trim(),
-      focus: focus.trim(),
-      description: description.trim(),
-      iconName: selectedIcon,
-      date: "November 2026",
-    };
+    setIsSubmitting(true);
+    try {
+      const newItem: AdvocacyItem = {
+        id: `advocacy-${Date.now()}`,
+        title: title.trim(),
+        focus: focus.trim(),
+        description: description.trim(),
+        iconName: selectedIcon,
+        date: "November 2026",
+      };
 
-    onAddAdvocacy(newItem);
-    onClose();
+      await onAddAdvocacy(newItem);
+      onClose();
 
-    // Reset
-    setTitle("");
-    setDescription("");
+      // Reset
+      setTitle("");
+      setDescription("");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -191,16 +197,27 @@ export default function UploadAdvocacyModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-700 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>Publish Advocacy</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Saving to Cloud...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Publish Advocacy</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

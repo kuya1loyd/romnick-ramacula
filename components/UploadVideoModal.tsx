@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Video, Upload, Link as LinkIcon, Check, Film, Smartphone, Monitor, Trash2, CheckCircle2 } from "lucide-react";
+import { X, Video, Upload, Link as LinkIcon, Check, Film, Smartphone, Monitor, Trash2, CheckCircle2, Loader2 } from "lucide-react";
 import { saveVideoToDb } from "@/lib/videoDb";
 
 export interface VideoReportItem {
@@ -93,6 +93,7 @@ export default function UploadVideoModal({
   const [fileName, setFileName] = useState<string>("");
   const [fileSizeStr, setFileSizeStr] = useState<string>("");
   const [thumbnail, setThumbnail] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -159,45 +160,50 @@ export default function UploadVideoModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
 
-    const reportId = `video-${Date.now()}`;
+    setIsSubmitting(true);
+    try {
+      const reportId = `video-${Date.now()}`;
 
-    // If a device file was selected, persist the actual File object to IndexedDB
-    if (sourceType === "device" && selectedFile) {
-      await saveVideoToDb(reportId, selectedFile);
-    }
+      // If a device file was selected, persist the actual File object to IndexedDB
+      if (sourceType === "device" && selectedFile) {
+        await saveVideoToDb(reportId, selectedFile);
+      }
 
-    const newReport: VideoReportItem = {
-      id: reportId,
-      title: title.trim(),
-      subject: subject.trim(),
-      duration: duration.trim() || (sourceType === "device" ? "Uploaded Video" : "Video Presentation"),
-      date: date.trim(),
-      instructor: instructor.trim() || "Kerstan Isaac Requiza",
-      description: description.trim() || "Uploaded academic video presentation.",
-      // For local files, keep the active blob URL for instant in-session playback
-      videoUrl: sourceType === "device" ? previewUrl : videoUrl.trim() || undefined,
-      fileName: sourceType === "device" ? fileName : undefined,
-      fileSize: sourceType === "device" ? fileSizeStr : undefined,
-      isLocalFile: sourceType === "device",
-      thumbnail: thumbnail || undefined,
-    };
+      const newReport: VideoReportItem = {
+        id: reportId,
+        title: title.trim(),
+        subject: subject.trim(),
+        duration: duration.trim() || (sourceType === "device" ? "Uploaded Video" : "Video Presentation"),
+        date: date.trim(),
+        instructor: instructor.trim() || "Kerstan Isaac Requiza",
+        description: description.trim() || "Uploaded academic video presentation.",
+        // For local files, keep the active blob URL for instant in-session playback
+        videoUrl: sourceType === "device" ? previewUrl : videoUrl.trim() || undefined,
+        fileName: sourceType === "device" ? fileName : undefined,
+        fileSize: sourceType === "device" ? fileSizeStr : undefined,
+        isLocalFile: sourceType === "device",
+        thumbnail: thumbnail || undefined,
+      };
 
-    onAddVideo(newReport);
-    onClose();
+      await onAddVideo(newReport);
+      onClose();
 
-    // Reset Form state without revoking the newly submitted object URL
-    setTitle("");
-    setDescription("");
-    setVideoUrl("");
-    setSelectedFile(null);
-    setPreviewUrl("");
-    setFileName("");
-    setFileSizeStr("");
-    setThumbnail("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      // Reset Form state without revoking the newly submitted object URL
+      setTitle("");
+      setDescription("");
+      setVideoUrl("");
+      setSelectedFile(null);
+      setPreviewUrl("");
+      setFileName("");
+      setFileSizeStr("");
+      setThumbnail("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -488,17 +494,27 @@ export default function UploadVideoModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={sourceType === "device" && !selectedFile}
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-300 disabled:text-slate-500 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                  disabled={(sourceType === "device" && !selectedFile) || isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-700 disabled:text-slate-400 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>Publish Video Report</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Saving Video to Cloud...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Publish Video Report</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

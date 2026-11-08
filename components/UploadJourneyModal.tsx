@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Image as ImageIcon, Upload, Check, Trash2, CheckCircle2, MapPin, Calendar, Tag, Heart } from "lucide-react";
+import { X, Image as ImageIcon, Upload, Check, Trash2, CheckCircle2, MapPin, Calendar, Tag, Heart, Loader2 } from "lucide-react";
 import { JourneyItem } from "@/data/gallery";
 import { saveJourneyRecord } from "@/lib/galleryDb";
 
@@ -82,6 +82,7 @@ export default function UploadJourneyModal({
   const [fileName, setFileName] = useState<string>("");
   const [fileSizeStr, setFileSizeStr] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -134,37 +135,42 @@ export default function UploadJourneyModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !meaning.trim() || !photoDataUrl) return;
+    if (!title.trim() || !meaning.trim() || !photoDataUrl || isSubmitting) return;
 
-    const journeyId = `journey-${Date.now()}`;
+    setIsSubmitting(true);
+    try {
+      const journeyId = `journey-${Date.now()}`;
 
-    const newItem: JourneyItem = {
-      id: journeyId,
-      title: title.trim(),
-      meaning: meaning.trim(),
-      description: description.trim() || meaning.trim(),
-      date: date.trim() || "November 2026",
-      location: location.trim() || "NEMSU - Lianga Campus",
-      tag: tag || "Academic Milestone",
-      photoUrl: photoDataUrl,
-      createdAt: Date.now(),
-    };
+      const newItem: JourneyItem = {
+        id: journeyId,
+        title: title.trim(),
+        meaning: meaning.trim(),
+        description: description.trim() || meaning.trim(),
+        date: date.trim() || "November 2026",
+        location: location.trim() || "NEMSU - Lianga Campus",
+        tag: tag || "Academic Milestone",
+        photoUrl: photoDataUrl,
+        createdAt: Date.now(),
+      };
 
-    // Save directly to IndexedDB (completely persistent across browser exit/refresh)
-    await saveJourneyRecord(newItem);
+      // Save directly to IndexedDB (completely persistent across browser exit/refresh)
+      await saveJourneyRecord(newItem);
 
-    onAddJourney(newItem);
-    onClose();
+      await onAddJourney(newItem);
+      onClose();
 
-    // Reset Form state
-    setTitle("");
-    setMeaning("");
-    setDescription("");
-    setPhotoDataUrl("");
-    setFileName("");
-    setFileSizeStr("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      // Reset Form state
+      setTitle("");
+      setMeaning("");
+      setDescription("");
+      setPhotoDataUrl("");
+      setFileName("");
+      setFileSizeStr("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -413,17 +419,27 @@ export default function UploadJourneyModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={!title.trim() || !meaning.trim() || !photoDataUrl || isProcessing}
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-300 disabled:text-slate-500 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                  disabled={!title.trim() || !meaning.trim() || !photoDataUrl || isProcessing || isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-700 disabled:text-slate-400 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>Publish to Gallery</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Saving to Cloud...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Publish to Gallery</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

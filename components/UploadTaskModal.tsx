@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, FileText, Globe, Check, Sparkles } from "lucide-react";
+import { X, Upload, FileText, Globe, Check, Sparkles, Loader2 } from "lucide-react";
 import { Task } from "@/data/tasks";
 
 interface UploadTaskModalProps {
@@ -82,6 +82,7 @@ export default function UploadTaskModal({
   const [fileSizeStr, setFileSizeStr] = useState("");
   const [coverImage, setCoverImage] = useState("");
   const [coverFileName, setCoverFileName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -118,43 +119,48 @@ export default function UploadTaskModal({
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
 
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      number: nextNumber,
-      title: title.trim(),
-      student: "Romnick P. Ramacula",
-      section: "BEEd-2C",
-      campus: "NEMSU - Lianga Campus",
-      instructor: instructor.trim() || "Kerstan Isaac Requiza",
-      category,
-      subject: subject.trim(),
-      description: description.trim() || "Uploaded academic coursework and activity.",
-      pdfUrl: taskType === "pdf" ? (fileDataUrl || undefined) : undefined,
-      projectUrl: taskType === "web" ? projectUrl.trim() : undefined,
-      isExternalLink: taskType === "web",
-      uploadDate: "November 2026",
-      fileSize: fileSizeStr || undefined,
-      tags: ["BEEd-2C", "NEMSU", subject.slice(0, 8)],
-      cardColor: selectedColor,
-      // Only use user's uploaded cover image if provided; otherwise undefined so it renders dynamic custom document card
-      previewImage: coverImage || undefined,
-    };
+    setIsSubmitting(true);
+    try {
+      const newTask: Task = {
+        id: `task-${Date.now()}`,
+        number: nextNumber,
+        title: title.trim(),
+        student: "Romnick P. Ramacula",
+        section: "BEEd-2C",
+        campus: "NEMSU - Lianga Campus",
+        instructor: instructor.trim() || "Kerstan Isaac Requiza",
+        category,
+        subject: subject.trim(),
+        description: description.trim() || "Uploaded academic coursework and activity.",
+        pdfUrl: taskType === "pdf" ? (fileDataUrl || undefined) : undefined,
+        projectUrl: taskType === "web" ? projectUrl.trim() : undefined,
+        isExternalLink: taskType === "web",
+        uploadDate: "November 2026",
+        fileSize: fileSizeStr || undefined,
+        tags: ["BEEd-2C", "NEMSU", subject.slice(0, 8)],
+        cardColor: selectedColor,
+        // Only use user's uploaded cover image if provided; otherwise undefined so it renders dynamic custom document card
+        previewImage: coverImage || undefined,
+      };
 
-    onAddTask(newTask);
-    onClose();
+      await onAddTask(newTask);
+      onClose();
 
-    // Reset form
-    setTitle("");
-    setDescription("");
-    setProjectUrl("");
-    setFileName("");
-    setFileDataUrl("");
-    setCoverImage("");
-    setCoverFileName("");
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setProjectUrl("");
+      setFileName("");
+      setFileDataUrl("");
+      setCoverImage("");
+      setCoverFileName("");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -434,16 +440,27 @@ export default function UploadTaskModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-700 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>Publish Task Card</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Saving to Cloud...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Publish Task Card</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
