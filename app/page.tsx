@@ -7,6 +7,7 @@ import About from "@/components/About";
 import TypingTestKeyboard from "@/components/TypingTestKeyboard";
 import Advocacy from "@/components/Advocacy";
 import VideoReports from "@/components/VideoReports";
+import JourneyGallery from "@/components/JourneyGallery";
 import TasksSection from "@/components/TasksSection";
 import PdfModal from "@/components/PdfModal";
 import Footer from "@/components/Footer";
@@ -46,6 +47,9 @@ export default function Home() {
 
       {/* Video Reports Section (#video-reports) */}
       <VideoReports />
+
+      {/* My Journey & Milestones Photo Gallery (#gallery) */}
+      <JourneyGallery />
 
       {/* My Tasks Section (#my-tasks) */}
       <TasksSection onViewPdf={(task) => setActivePdfTask(task)} />

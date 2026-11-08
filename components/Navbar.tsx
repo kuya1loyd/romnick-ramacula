@@ -27,6 +27,7 @@ export default function Navbar() {
     { label: "About Me", href: "#about" },
     { label: "Advocacy", href: "#advocacy" },
     { label: "Video Reports", href: "#video-reports" },
+    { label: "Journey Gallery", href: "#gallery" },
     { label: "My Tasks", href: "#my-tasks" },
   ];
 
