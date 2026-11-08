@@ -13,6 +13,8 @@ import {
   Sparkles,
   Sun,
   Flame,
+  Smartphone,
+  Keyboard,
 } from "lucide-react";
 
 // Curated Educational & Literary Quotes
@@ -117,6 +119,8 @@ export default function TypingTestKeyboard() {
   const chassisRef = useRef<HTMLDivElement | null>(null);
   const [keyboardScale, setKeyboardScale] = useState(1);
   const [keyboardHeight, setKeyboardHeight] = useState<number | null>(null);
+  const [mobileTypingMode, setMobileTypingMode] = useState<"phone" | "screen">("phone");
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   useEffect(() => {
     const updateScale = () => {
@@ -363,7 +367,32 @@ export default function TypingTestKeyboard() {
     } else {
       handleKeyHit(k.toLowerCase());
     }
-    inputRef.current?.focus({ preventScroll: true });
+    if (mobileTypingMode === "phone") {
+      inputRef.current?.focus({ preventScroll: true });
+    }
+  };
+
+  // Mobile virtual keyboard input handler
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (!val) return;
+    for (const char of val) {
+      handleKeyHit(char);
+    }
+    e.target.value = "";
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      handleKeyHit("Backspace");
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      handleKeyHit("Enter");
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      handleKeyHit("Tab");
+    }
   };
 
   // Accuracy calculation
@@ -380,19 +409,30 @@ export default function TypingTestKeyboard() {
 
   return (
     <section id="typing-test" className="py-12 sm:py-20 relative bg-white/95 backdrop-blur-md border-t border-slate-200/90 overflow-hidden scroll-mt-24">
-      {/* Hidden input to guarantee keyboard typing always registers without causing viewport jumps or virtual keyboard popups */}
+      {/* Hidden input to receive keyboard typing from mobile phone virtual keyboards & hardware keyboards */}
       <input
         ref={inputRef}
         type="text"
-        inputMode="none"
-        className="opacity-0 pointer-events-none fixed top-0 left-0 w-1 h-1 -z-50"
-        aria-hidden="true"
-        tabIndex={-1}
+        inputMode={mobileTypingMode === "phone" ? "text" : "none"}
+        autoCapitalize="none"
+        autoCorrect="off"
+        autoComplete="off"
+        spellCheck="false"
+        onChange={handleInputChange}
+        onKeyDown={handleInputKeyDown}
+        onFocus={() => setIsInputFocused(true)}
+        onBlur={() => setIsInputFocused(false)}
+        className="opacity-0 fixed top-0 left-0 w-1 h-1 -z-50 pointer-events-none"
+        aria-label="Typing test input"
       />
 
       <div
         className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
-        onClick={() => inputRef.current?.focus({ preventScroll: true })}
+        onClick={() => {
+          if (mobileTypingMode === "phone") {
+            inputRef.current?.focus({ preventScroll: true });
+          }
+        }}
       >
         {/* Top Header & Statistics Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 text-xs text-slate-500 font-mono">
@@ -567,6 +607,75 @@ export default function TypingTestKeyboard() {
           <div className="mt-2 text-[11px] text-slate-400">
             <span>Click card to type • Tab restart • {totalClaks} claks typed</span>
           </div>
+
+          {/* Mobile Phone Keyboard Active Banner / Tap to Type Prompt */}
+          <div className="sm:hidden mt-3 pt-3 border-t border-slate-200/80 flex items-center justify-center">
+            {isInputFocused ? (
+              <div className="flex items-center justify-between w-full px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  Phone keyboard open! Type below:
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    inputRef.current?.blur();
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-bold cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMobileTypingMode("phone");
+                  setTimeout(() => inputRef.current?.focus(), 50);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-md hover:bg-indigo-700 transition-all cursor-pointer"
+              >
+                <Smartphone className="w-4 h-4 text-emerald-300" />
+                <span>Tap here to type using your Phone&apos;s Keyboard</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile typing mode selector: Phone Keyboard vs Screen Keys */}
+        <div className="sm:hidden flex items-center justify-center gap-2 mb-3">
+          <button
+            type="button"
+            onClick={() => {
+              setMobileTypingMode("phone");
+              setTimeout(() => inputRef.current?.focus(), 50);
+            }}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer ${
+              mobileTypingMode === "phone"
+                ? "bg-indigo-600 text-white ring-2 ring-indigo-300 shadow-sm"
+                : "bg-white text-slate-700 border border-slate-300"
+            }`}
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>Phone Keyboard</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMobileTypingMode("screen");
+              inputRef.current?.blur();
+            }}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer ${
+              mobileTypingMode === "screen"
+                ? "bg-slate-900 text-white ring-2 ring-slate-400 shadow-sm"
+                : "bg-white text-slate-700 border border-slate-300"
+            }`}
+          >
+            <Keyboard className="w-3.5 h-3.5 text-amber-400" />
+            <span>Tap On-Screen Keys</span>
+          </button>
         </div>
 
         {/* Realistic Mechanical Keyboard Layout with Dynamic Theme Colors & RGB Underglow */}
