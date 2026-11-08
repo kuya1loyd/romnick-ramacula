@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Video, ExternalLink, Calendar, User, Loader2, Play, AlertCircle, Sparkles, Link as LinkIcon, RefreshCw } from "lucide-react";
+import { X, Video, Calendar, User, Loader2, Link as LinkIcon } from "lucide-react";
 import { VideoReportItem } from "./UploadVideoModal";
 import { getVideoUrlFromDb } from "@/lib/videoDb";
 
@@ -15,8 +15,6 @@ interface VideoPlayerModalProps {
 export default function VideoPlayerModal({ report, onClose, onUpdateLink }: VideoPlayerModalProps) {
   const [resolvedUrl, setResolvedUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isMissingLocalFile, setIsMissingLocalFile] = useState<boolean>(false);
-  const [playbackError, setPlaybackError] = useState<boolean>(false);
 
   // Close on Escape & lock body scroll
   useEffect(() => {
@@ -39,52 +37,31 @@ export default function VideoPlayerModal({ report, onClose, onUpdateLink }: Vide
     let localBlobUrl = "";
 
     const loadVideo = async () => {
-      setIsMissingLocalFile(false);
-      setPlaybackError(false);
       if (!report) {
         setResolvedUrl("");
+        setIsLoading(false);
         return;
       }
       setIsLoading(true);
 
-      // If local file, query IndexedDB for fresh blob
-      if (report.isLocalFile) {
-        try {
-          const dbUrl = await getVideoUrlFromDb(report.id);
-          if (!isCancelled && dbUrl) {
-            localBlobUrl = dbUrl;
-            setResolvedUrl(dbUrl);
-            setIsLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.warn("Could not retrieve video from IndexedDB:", err);
-        }
-
-        // If it's marked as a local file and IndexedDB does NOT contain it,
-        // this means the video was uploaded from another computer / device files.
-        // It cannot play on this phone / device via local blob!
-        if (!isCancelled) {
-          setIsMissingLocalFile(true);
-          setResolvedUrl("");
+      // Check IndexedDB first for stored local blob
+      try {
+        const dbUrl = await getVideoUrlFromDb(report.id);
+        if (!isCancelled && dbUrl) {
+          localBlobUrl = dbUrl;
+          setResolvedUrl(dbUrl);
           setIsLoading(false);
           return;
         }
+      } catch (err) {
+        console.warn("Could not retrieve video from IndexedDB:", err);
       }
 
-      // If report already has a videoUrl (web link or live URL)
-      if (!isCancelled && report.videoUrl) {
-        // If it's a blob: URL from another session, it will be dead
-        if (report.videoUrl.startsWith("blob:") && report.isLocalFile) {
-          setIsMissingLocalFile(true);
-          setResolvedUrl("");
-        } else {
-          setResolvedUrl(report.videoUrl);
-        }
-      } else if (!isCancelled) {
-        setResolvedUrl("");
+      // Direct fallback to report.videoUrl
+      if (!isCancelled) {
+        setResolvedUrl(report.videoUrl || "");
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     loadVideo();
@@ -99,26 +76,30 @@ export default function VideoPlayerModal({ report, onClose, onUpdateLink }: Vide
 
   // Check if URL is YouTube
   const youtubeEmbedUrl = useMemo(() => {
-    if (!resolvedUrl) return null;
-    const match = resolvedUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+    const targetUrl = resolvedUrl || report?.videoUrl;
+    if (!targetUrl) return null;
+    const match = targetUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
     if (match && match[1]) {
       return `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
     }
     return null;
-  }, [resolvedUrl]);
+  }, [resolvedUrl, report?.videoUrl]);
 
   // Check if URL is Google Drive
   const googleDriveEmbedUrl = useMemo(() => {
-    if (!resolvedUrl) return null;
-    const match = resolvedUrl.match(/drive\.google\.com\/(?:file\/d\/([a-zA-Z0-9_-]+)|open\?id=([a-zA-Z0-9_-]+))/);
+    const targetUrl = resolvedUrl || report?.videoUrl;
+    if (!targetUrl) return null;
+    const match = targetUrl.match(/drive\.google\.com\/(?:file\/d\/([a-zA-Z0-9_-]+)|open\?id=([a-zA-Z0-9_-]+))/);
     const fileId = match ? match[1] || match[2] : null;
     if (fileId) {
       return `https://drive.google.com/file/d/${fileId}/preview`;
     }
     return null;
-  }, [resolvedUrl]);
+  }, [resolvedUrl, report?.videoUrl]);
 
   if (!report) return null;
+
+  const currentVideoSrc = resolvedUrl || report.videoUrl;
 
   return (
     <AnimatePresence>
@@ -179,62 +160,6 @@ export default function VideoPlayerModal({ report, onClose, onUpdateLink }: Vide
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 <span className="text-xs">Loading presentation video...</span>
               </div>
-            ) : isMissingLocalFile ? (
-              /* Informative Device File Missing UI */
-              <div className="p-4 sm:p-8 flex flex-col items-center text-center max-w-lg mx-auto select-none">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-3">
-                  <AlertCircle className="w-6 h-6" />
-                </div>
-                <h4 className="text-sm sm:text-base font-bold text-white mb-1.5">
-                  Video File Not Available On This Device
-                </h4>
-                <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed mb-4 max-w-md">
-                  This video {report.fileSize ? `(${report.fileSize})` : ""} was uploaded from another computer&apos;s local files. Browser storage cannot automatically transfer local files across devices or phones.
-                </p>
-
-                <div className="w-full p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-left text-[11px] text-slate-300 mb-4">
-                  <p className="font-bold text-indigo-300 mb-1.5 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                    How to make this video play on mobile & worldwide:
-                  </p>
-                  <ol className="list-decimal list-inside space-y-1 text-slate-400">
-                    <li>Upload your video to <strong className="text-slate-200">YouTube</strong> (Unlisted or Public) or <strong className="text-slate-200">Google Drive</strong> (Anyone with link).</li>
-                    <li>Click <strong className="text-indigo-300">Update Video Link</strong> below and paste the link!</li>
-                  </ol>
-                </div>
-
-                {onUpdateLink && (
-                  <button
-                    type="button"
-                    onClick={() => onUpdateLink(report)}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg transition-all cursor-pointer"
-                  >
-                    <LinkIcon className="w-4 h-4" />
-                    <span>Paste YouTube or Google Drive Link</span>
-                  </button>
-                )}
-              </div>
-            ) : playbackError ? (
-              /* Playback Error Fallback */
-              <div className="p-6 text-center max-w-md mx-auto">
-                <AlertCircle className="w-10 h-10 text-rose-400 mx-auto mb-3" />
-                <h4 className="text-sm sm:text-base font-bold text-white mb-1">
-                  Playback Error
-                </h4>
-                <p className="text-xs text-slate-400 mb-4">
-                  Your browser could not decode or play this video format.
-                </p>
-                {onUpdateLink && (
-                  <button
-                    type="button"
-                    onClick={() => onUpdateLink(report)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Update Video URL</span>
-                  </button>
-                )}
-              </div>
             ) : youtubeEmbedUrl ? (
               <iframe
                 src={youtubeEmbedUrl}
@@ -251,20 +176,21 @@ export default function VideoPlayerModal({ report, onClose, onUpdateLink }: Vide
                 allowFullScreen
                 className="w-full h-full border-0"
               />
-            ) : resolvedUrl ? (
+            ) : currentVideoSrc ? (
               <video
-                key={resolvedUrl}
-                src={resolvedUrl}
+                key={currentVideoSrc}
+                src={currentVideoSrc}
                 controls
                 playsInline
-                onError={() => setPlaybackError(true)}
+                autoPlay
                 className="w-full h-full object-contain bg-black"
               >
                 Your browser does not support the video tag.
               </video>
             ) : (
-              <div className="text-center p-6 text-slate-400 text-xs">
-                Video source was not found. Please upload or link the video again.
+              <div className="flex flex-col items-center justify-center p-6 text-slate-400 text-center">
+                <Video className="w-10 h-10 text-slate-600 mb-2" />
+                <p className="text-xs text-slate-400">No video stream available</p>
               </div>
             )}
           </div>
