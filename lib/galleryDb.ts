@@ -1,6 +1,7 @@
-// Lightweight IndexedDB helper for storing journey photos directly from PC / Mobile devices
-const DB_NAME = "romnick_gallery_db";
-const STORE_NAME = "photos";
+import { JourneyItem } from "@/data/gallery";
+
+const DB_NAME = "romnick_gallery_db_v2";
+const STORE_NAME = "journey_records";
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -11,7 +12,7 @@ function openDb(): Promise<IDBDatabase> {
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
+        db.createObjectStore(STORE_NAME, { keyPath: "id" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -19,48 +20,48 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-export async function savePhotoToDb(id: string, fileData: Blob | File | string): Promise<void> {
+// Save or update an item in IndexedDB (handles full data URLs without storage limits)
+export async function saveJourneyRecord(item: JourneyItem): Promise<void> {
   try {
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite");
       const store = tx.objectStore(STORE_NAME);
-      store.put(fileData, id);
+      store.put(item);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
   } catch (err) {
-    console.warn("Could not save photo to IndexedDB:", err);
+    console.error("Failed to save journey record to IndexedDB:", err);
   }
 }
 
-export async function getPhotoUrlFromDb(id: string): Promise<string | null> {
+// Get all saved items sorted newest first
+export async function getAllJourneyRecords(): Promise<JourneyItem[]> {
   try {
     const db = await openDb();
     return new Promise((resolve) => {
       const tx = db.transaction(STORE_NAME, "readonly");
       const store = tx.objectStore(STORE_NAME);
-      const getReq = store.get(id);
-      getReq.onsuccess = () => {
-        const result = getReq.result;
-        if (!result) return resolve(null);
-        if (typeof result === "string") {
-          return resolve(result);
-        }
-        if (result instanceof Blob) {
-          const url = URL.createObjectURL(result);
-          return resolve(url);
-        }
-        resolve(null);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const records: JourneyItem[] = req.result || [];
+        // Filter out legacy dummy/sample items if any exist
+        const cleaned = records.filter(
+          (r) => r.id !== "journey-beed-scholar" && r.id !== "journey-ttl-demonstration"
+        );
+        cleaned.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        resolve(cleaned);
       };
-      getReq.onerror = () => resolve(null);
+      req.onerror = () => resolve([]);
     });
   } catch {
-    return null;
+    return [];
   }
 }
 
-export async function deletePhotoFromDb(id: string): Promise<void> {
+// Delete an item from IndexedDB
+export async function deleteJourneyRecord(id: string): Promise<void> {
   try {
     const db = await openDb();
     return new Promise((resolve) => {

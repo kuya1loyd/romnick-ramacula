@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, MapPin, Tag, Heart, Download, ExternalLink, GraduationCap, Quote } from "lucide-react";
+import { X, Calendar, MapPin, Download, Quote } from "lucide-react";
 import { JourneyItem } from "@/data/gallery";
-import { getPhotoUrlFromDb } from "@/lib/galleryDb";
 
 interface JourneyLightboxModalProps {
   item: JourneyItem | null;
@@ -12,8 +11,6 @@ interface JourneyLightboxModalProps {
 }
 
 export default function JourneyLightboxModal({ item, onClose }: JourneyLightboxModalProps) {
-  const [liveUrl, setLiveUrl] = useState<string>("");
-
   // Lock background scroll
   useEffect(() => {
     if (item) {
@@ -21,45 +18,6 @@ export default function JourneyLightboxModal({ item, onClose }: JourneyLightboxM
     }
     return () => {
       document.body.style.overflow = "unset";
-    };
-  }, [item]);
-
-  // Load photo from IndexedDB if it was uploaded locally
-  useEffect(() => {
-    let active = true;
-    let localBlob = "";
-
-    const load = async () => {
-      if (!item) {
-        setLiveUrl("");
-        return;
-      }
-
-      if (item.isLocalFile) {
-        try {
-          const dbUrl = await getPhotoUrlFromDb(item.id);
-          if (active && dbUrl) {
-            localBlob = dbUrl;
-            setLiveUrl(dbUrl);
-            return;
-          }
-        } catch (e) {
-          console.warn("Could not retrieve photo from DB", e);
-        }
-      }
-
-      if (active) {
-        setLiveUrl(item.photoUrl || item.thumbnail || "");
-      }
-    };
-
-    load();
-
-    return () => {
-      active = false;
-      if (localBlob && localBlob.startsWith("blob:")) {
-        URL.revokeObjectURL(localBlob);
-      }
     };
   }, [item]);
 
@@ -99,23 +57,21 @@ export default function JourneyLightboxModal({ item, onClose }: JourneyLightboxM
           <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 bg-slate-50">
             {/* Image Viewer Area */}
             <div className="md:col-span-7 bg-slate-950 flex items-center justify-center p-4 sm:p-6 min-h-[300px] md:min-h-[460px] relative">
-              {liveUrl ? (
+              {item.photoUrl ? (
                 <img
-                  src={liveUrl}
+                  src={item.photoUrl}
                   alt={item.title}
                   className="max-h-[65vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
                 />
               ) : (
-                <div className="text-slate-500 text-xs font-semibold">Loading photo...</div>
+                <div className="text-slate-500 text-xs font-semibold">No photo available</div>
               )}
 
-              {/* Download / Open Photo button */}
-              {liveUrl && (
+              {/* Download / Save Photo button */}
+              {item.photoUrl && (
                 <a
-                  href={liveUrl}
+                  href={item.photoUrl}
                   download={`${item.title.toLowerCase().replace(/\s+/g, "-")}.jpg`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="absolute bottom-4 right-4 p-2.5 rounded-xl bg-black/70 hover:bg-black text-white text-xs font-bold backdrop-blur-md border border-white/20 transition-all flex items-center gap-1.5 shadow-lg"
                   title="Download or view full photo"
                 >

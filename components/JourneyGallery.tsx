@@ -8,18 +8,14 @@ import {
   Calendar,
   MapPin,
   Trash2,
-  Sparkles,
   Quote,
   Maximize2,
-  Heart,
-  Tag,
-  BookOpen,
 } from "lucide-react";
-import { JourneyItem, initialJourneyItems } from "@/data/gallery";
+import { JourneyItem } from "@/data/gallery";
 import UploadJourneyModal from "./UploadJourneyModal";
 import JourneyLightboxModal from "./JourneyLightboxModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
-import { getPhotoUrlFromDb, deletePhotoFromDb } from "@/lib/galleryDb";
+import { getAllJourneyRecords, deleteJourneyRecord } from "@/lib/galleryDb";
 
 const FILTER_TAGS = [
   "All",
@@ -39,49 +35,28 @@ export default function JourneyGallery() {
   const [itemToDelete, setItemToDelete] = useState<JourneyItem | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Load from localStorage or initialize with initialJourneyItems
+  // Load from IndexedDB on mount (clears old default sample items)
   useEffect(() => {
+    // Clear legacy localStorage cache that had pre-added sample cards
     try {
-      const saved = localStorage.getItem("romnick_journey_gallery");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setItems(parsed);
-          setHasLoaded(true);
-          return;
-        }
-      }
-    } catch (e) {
-      console.error(e);
+      localStorage.removeItem("romnick_journey_gallery");
+    } catch {
+      // ignore
     }
-    // Fallback initial items
-    setItems(initialJourneyItems);
-    setHasLoaded(true);
+
+    getAllJourneyRecords().then((saved) => {
+      setItems(saved);
+      setHasLoaded(true);
+    });
   }, []);
 
-  // Save to localStorage when changed
-  const saveItems = (updated: JourneyItem[]) => {
-    setItems(updated);
-    try {
-      // Don't store ephemeral blob URLs in localStorage
-      const sanitized = updated.map((i) =>
-        i.isLocalFile ? { ...i, photoUrl: undefined } : i
-      );
-      localStorage.setItem("romnick_journey_gallery", JSON.stringify(sanitized));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const handleAddJourney = (newItem: JourneyItem) => {
-    const updated = [newItem, ...items];
-    saveItems(updated);
+    setItems((prev) => [newItem, ...prev]);
   };
 
-  const handleDelete = (id: string) => {
-    const updated = items.filter((i) => i.id !== id);
-    saveItems(updated);
-    deletePhotoFromDb(id);
+  const handleDelete = async (id: string) => {
+    await deleteJourneyRecord(id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
   // Filter items
@@ -123,7 +98,7 @@ export default function JourneyGallery() {
             className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed"
           >
             A visual documentation of my teacher education journey at NEMSU — Lianga Campus.
-            Explore pictures of academic milestones, classroom experiences, and the personal meaning behind each step.
+            Upload photos of academic milestones, classroom experiences, and record the personal meaning behind each moment.
           </motion.p>
 
           {/* Upload Button */}
@@ -146,26 +121,28 @@ export default function JourneyGallery() {
           )}
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-4 mb-10 no-scrollbar">
-          {FILTER_TAGS.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => setSelectedTag(tag)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                selectedTag === tag
-                  ? "bg-slate-900 text-white shadow-sm scale-105"
-                  : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
+        {/* Filter Pills (only show if items exist) */}
+        {items.length > 0 && (
+          <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto pb-4 mb-10 no-scrollbar">
+            {FILTER_TAGS.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setSelectedTag(tag)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  selectedTag === tag
+                    ? "bg-slate-900 text-white shadow-sm scale-105"
+                    : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Gallery Grid */}
-        {filteredItems.length > 0 ? (
+        {hasLoaded && filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <AnimatePresence>
               {filteredItems.map((item, idx) => (
@@ -181,7 +158,11 @@ export default function JourneyGallery() {
                 >
                   {/* Photo Container */}
                   <div className="relative aspect-[4/3] w-full bg-slate-950 overflow-hidden">
-                    <JourneyCardMedia item={item} />
+                    <img
+                      src={item.photoUrl}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
 
                     {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
@@ -261,15 +242,15 @@ export default function JourneyGallery() {
               ))}
             </AnimatePresence>
           </div>
-        ) : (
-          /* Empty State */
+        ) : hasLoaded ? (
+          /* Clean Empty State (No pre-added dummy items!) */
           <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-300 max-w-md mx-auto shadow-xs">
             <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
               <Camera className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-black text-slate-900 mb-1">No Journey Photos Found</h3>
+            <h3 className="text-lg font-black text-slate-900 mb-1">No Journey Photos Added Yet</h3>
             <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-              No photos currently under &ldquo;{selectedTag}&rdquo;. Upload a photo to begin your visual journal!
+              Start documenting your BEEd-2C journey! Upload photos from your PC or phone, describe what happened, and share the meaning behind each memory.
             </p>
             <button
               type="button"
@@ -277,10 +258,10 @@ export default function JourneyGallery() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Upload Picture</span>
+              <span>Upload Your First Journey Photo</span>
             </button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Upload Journey Modal */}
@@ -310,39 +291,5 @@ export default function JourneyGallery() {
         onClose={() => setItemToDelete(null)}
       />
     </section>
-  );
-}
-
-// Media renderer that automatically fetches locally saved blobs from IndexedDB
-function JourneyCardMedia({ item }: { item: JourneyItem }) {
-  const [liveUrl, setLiveUrl] = useState<string>(item.thumbnail || item.photoUrl || "");
-
-  useEffect(() => {
-    let active = true;
-    let localBlob = "";
-
-    if (item.isLocalFile) {
-      getPhotoUrlFromDb(item.id).then((url) => {
-        if (active && url) {
-          localBlob = url;
-          setLiveUrl(url);
-        }
-      });
-    }
-
-    return () => {
-      active = false;
-      if (localBlob && localBlob.startsWith("blob:")) {
-        URL.revokeObjectURL(localBlob);
-      }
-    };
-  }, [item]);
-
-  return (
-    <img
-      src={liveUrl || item.thumbnail || item.photoUrl || "/images/profile.jpg"}
-      alt={item.title}
-      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-    />
   );
 }

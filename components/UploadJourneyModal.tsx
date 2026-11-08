@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Image as ImageIcon, Upload, Check, Trash2, CheckCircle2, Sparkles, MapPin, Calendar, Tag, Heart } from "lucide-react";
+import { X, Image as ImageIcon, Upload, Check, Trash2, CheckCircle2, MapPin, Calendar, Tag, Heart } from "lucide-react";
 import { JourneyItem } from "@/data/gallery";
-import { savePhotoToDb } from "@/lib/galleryDb";
+import { saveJourneyRecord } from "@/lib/galleryDb";
 
 interface UploadJourneyModalProps {
   isOpen: boolean;
@@ -21,17 +21,17 @@ const CATEGORIES = [
   "Community & Advocacy",
 ];
 
-// Helper to optimize and resize large phone photos to max 1800px width/height and generate low-res thumbnail
-function processImageFile(file: File): Promise<{ blob: Blob; thumbnail: string; previewUrl: string }> {
-  return new Promise((resolve) => {
+// Helper to convert phone / PC photos into optimized persistent base64 Data URLs (max dimension 1400px)
+function processImageFile(file: File): Promise<{ photoUrl: string }> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        // Full optimized image
-        const maxDim = 1800;
+        const maxDim = 1400;
         let width = img.width;
         let height = img.height;
+
         if (width > maxDim || height > maxDim) {
           if (width > height) {
             height = Math.round((height * maxDim) / width);
@@ -46,38 +46,21 @@ function processImageFile(file: File): Promise<{ blob: Blob; thumbnail: string; 
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
+        if (!ctx) {
+          return resolve({ photoUrl: e.target?.result as string });
+        }
 
-        // Low-res thumbnail for instant rendering (width 400)
-        const thumbCanvas = document.createElement("canvas");
-        const thumbWidth = 400;
-        const thumbHeight = Math.round((img.height * thumbWidth) / img.width);
-        thumbCanvas.width = thumbWidth;
-        thumbCanvas.height = thumbHeight;
-        const thumbCtx = thumbCanvas.getContext("2d");
-        thumbCtx?.drawImage(img, 0, 0, thumbWidth, thumbHeight);
-        const thumbnail = thumbCanvas.toDataURL("image/jpeg", 0.75);
-
-        canvas.toBlob(
-          (blob) => {
-            const finalBlob = blob || file;
-            const previewUrl = URL.createObjectURL(finalBlob);
-            resolve({ blob: finalBlob, thumbnail, previewUrl });
-          },
-          "image/jpeg",
-          0.88
-        );
+        ctx.drawImage(img, 0, 0, width, height);
+        // High quality JPEG data URL
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        resolve({ photoUrl: dataUrl });
       };
       img.onerror = () => {
-        const previewUrl = URL.createObjectURL(file);
-        resolve({ blob: file, thumbnail: "", previewUrl });
+        resolve({ photoUrl: e.target?.result as string });
       };
       img.src = e.target?.result as string;
     };
-    reader.onerror = () => {
-      const previewUrl = URL.createObjectURL(file);
-      resolve({ blob: file, thumbnail: "", previewUrl });
-    };
+    reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
 }
@@ -95,9 +78,7 @@ export default function UploadJourneyModal({
   const [location, setLocation] = useState("NEMSU - Lianga Campus");
 
   // Image State
-  const [selectedBlob, setSelectedBlob] = useState<Blob | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
-  const [thumbnail, setThumbnail] = useState<string>("");
+  const [photoDataUrl, setPhotoDataUrl] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
   const [fileSizeStr, setFileSizeStr] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -114,15 +95,6 @@ export default function UploadJourneyModal({
     };
   }, [isOpen]);
 
-  // Clean up object URL when component unmounts
-  useEffect(() => {
-    return () => {
-      if (previewUrl && previewUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
   // Handle Photo Selection
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,9 +109,7 @@ export default function UploadJourneyModal({
 
     try {
       const processed = await processImageFile(file);
-      setSelectedBlob(processed.blob);
-      setPreviewUrl(processed.previewUrl);
-      setThumbnail(processed.thumbnail);
+      setPhotoDataUrl(processed.photoUrl);
 
       // Auto-fill title if empty
       if (!title) {
@@ -148,21 +118,13 @@ export default function UploadJourneyModal({
       }
     } catch (err) {
       console.error(err);
-      const directUrl = URL.createObjectURL(file);
-      setSelectedBlob(file);
-      setPreviewUrl(directUrl);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleRemovePhoto = () => {
-    if (previewUrl && previewUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setSelectedBlob(null);
-    setPreviewUrl("");
-    setThumbnail("");
+    setPhotoDataUrl("");
     setFileName("");
     setFileSizeStr("");
     if (fileInputRef.current) {
@@ -172,12 +134,9 @@ export default function UploadJourneyModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !meaning.trim() || !selectedBlob) return;
+    if (!title.trim() || !meaning.trim() || !photoDataUrl) return;
 
     const journeyId = `journey-${Date.now()}`;
-
-    // Save actual high-res photo to IndexedDB for offline persistence without quota crashes
-    await savePhotoToDb(journeyId, selectedBlob);
 
     const newItem: JourneyItem = {
       id: journeyId,
@@ -187,11 +146,12 @@ export default function UploadJourneyModal({
       date: date.trim() || "November 2026",
       location: location.trim() || "NEMSU - Lianga Campus",
       tag: tag || "Academic Milestone",
-      photoUrl: previewUrl,
-      thumbnail: thumbnail || undefined,
-      isLocalFile: true,
+      photoUrl: photoDataUrl,
       createdAt: Date.now(),
     };
+
+    // Save directly to IndexedDB (completely persistent across browser exit/refresh)
+    await saveJourneyRecord(newItem);
 
     onAddJourney(newItem);
     onClose();
@@ -200,9 +160,7 @@ export default function UploadJourneyModal({
     setTitle("");
     setMeaning("");
     setDescription("");
-    setSelectedBlob(null);
-    setPreviewUrl("");
-    setThumbnail("");
+    setPhotoDataUrl("");
     setFileName("");
     setFileSizeStr("");
     if (fileInputRef.current) {
@@ -273,12 +231,12 @@ export default function UploadJourneyModal({
                     className="hidden"
                   />
 
-                  {previewUrl ? (
+                  {photoDataUrl ? (
                     /* Image Selected: Preview Card */
                     <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 flex flex-col gap-3 shadow-xs">
                       <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-900 shadow-inner">
                         <img
-                          src={previewUrl}
+                          src={photoDataUrl}
                           alt="Selected preview"
                           className="w-full h-full object-contain"
                         />
@@ -288,10 +246,10 @@ export default function UploadJourneyModal({
                           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                           <div className="overflow-hidden">
                             <p className="text-xs font-bold text-slate-900 truncate">
-                              {fileName}
+                              {fileName || "Photo Ready"}
                             </p>
                             <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">
-                              Photo ready • {fileSizeStr}
+                              Persistent photo ready • {fileSizeStr}
                             </p>
                           </div>
                         </div>
@@ -362,7 +320,7 @@ export default function UploadJourneyModal({
                   />
                 </div>
 
-                {/* Meaning & Significance (As user requested) */}
+                {/* Meaning & Significance */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                     <Heart className="w-3.5 h-3.5 text-rose-500" />
@@ -461,7 +419,7 @@ export default function UploadJourneyModal({
                 </button>
                 <button
                   type="submit"
-                  disabled={!title.trim() || !meaning.trim() || !selectedBlob || isProcessing}
+                  disabled={!title.trim() || !meaning.trim() || !photoDataUrl || isProcessing}
                   className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black disabled:bg-slate-300 disabled:text-slate-500 text-white text-xs font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Check className="w-4 h-4 text-emerald-400" />
