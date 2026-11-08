@@ -68,20 +68,22 @@ export default function Advocacy() {
   };
 
   const handleDelete = async (id: string) => {
-    const updated = advocacies.filter((item) => item.id !== id);
-    setAdvocacies(updated);
-    try {
-      localStorage.setItem("romnick_advocacies", JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
-
+    // Delete permanently from Cloud Database first
     try {
       await fetch(`/api/advocacy?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
     } catch (err) {
       console.error("Cloud DB advocacy delete error:", err);
+    }
+
+    // Update local state and cache
+    const updated = advocacies.filter((item) => item.id !== id);
+    setAdvocacies(updated);
+    try {
+      localStorage.setItem("romnick_advocacies", JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -225,7 +227,6 @@ export default function Advocacy() {
         onConfirm={async () => {
           if (advocacyToDelete) {
             await handleDelete(advocacyToDelete.id);
-            setAdvocacyToDelete(null);
           }
         }}
         onClose={() => setAdvocacyToDelete(null)}

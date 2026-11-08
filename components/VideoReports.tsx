@@ -70,6 +70,16 @@ export default function VideoReports() {
   };
 
   const handleDelete = async (id: string) => {
+    // Delete permanently from Cloud Database first
+    try {
+      await fetch(`/api/videos?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Cloud DB video delete error:", err);
+    }
+
+    // Update local state and cache
     const updated = reports.filter((r) => r.id !== id);
     setReports(updated);
     try {
@@ -80,14 +90,6 @@ export default function VideoReports() {
       deleteVideoFromDb(id);
     } catch (e) {
       console.error(e);
-    }
-
-    try {
-      await fetch(`/api/videos?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-    } catch (err) {
-      console.error("Cloud DB video delete error:", err);
     }
   };
 
@@ -266,7 +268,6 @@ export default function VideoReports() {
         onConfirm={async () => {
           if (reportToDelete) {
             await handleDelete(reportToDelete.id);
-            setReportToDelete(null);
           }
         }}
         onClose={() => setReportToDelete(null)}

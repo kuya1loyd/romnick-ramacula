@@ -73,21 +73,22 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
   };
 
   const handleDeleteTask = async (id: string) => {
-    const updated = tasks.filter((t) => t.id !== id);
-    setTasks(updated);
-    try {
-      localStorage.setItem("romnick_active_tasks", JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
-
-    // Delete permanently from Cloud Database
+    // Delete permanently from Cloud Database first
     try {
       await fetch(`/api/tasks?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
     } catch (err) {
       console.error("Cloud DB delete error:", err);
+    }
+
+    // Update local state and cache
+    const updated = tasks.filter((t) => t.id !== id);
+    setTasks(updated);
+    try {
+      localStorage.setItem("romnick_active_tasks", JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -351,7 +352,6 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
         onConfirm={async () => {
           if (taskToDelete) {
             await handleDeleteTask(taskToDelete.id);
-            setTaskToDelete(null);
           }
         }}
         onClose={() => setTaskToDelete(null)}

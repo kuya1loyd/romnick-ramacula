@@ -73,10 +73,7 @@ export default function JourneyGallery() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteJourneyRecord(id);
-    setItems((prev) => prev.filter((i) => i.id !== id));
-
-    // Delete from Cloud Database
+    // Delete from Cloud Database first
     try {
       await fetch(`/api/gallery?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
@@ -84,6 +81,10 @@ export default function JourneyGallery() {
     } catch (err) {
       console.error("Cloud DB gallery delete error:", err);
     }
+
+    // Delete from IndexedDB and local state
+    await deleteJourneyRecord(id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
   // Filter items
@@ -312,7 +313,6 @@ export default function JourneyGallery() {
         onConfirm={async () => {
           if (itemToDelete) {
             await handleDelete(itemToDelete.id);
-            setItemToDelete(null);
           }
         }}
         onClose={() => setItemToDelete(null)}

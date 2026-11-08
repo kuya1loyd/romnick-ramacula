@@ -51,11 +51,12 @@ export default function DeleteConfirmModal({
     try {
       await Promise.all([
         Promise.resolve(onConfirm()),
-        new Promise((resolve) => setTimeout(resolve, 750)),
+        new Promise((resolve) => setTimeout(resolve, 800)),
       ]);
       onClose();
     } catch (err) {
       console.error("Failed to delete item:", err);
+      onClose();
     } finally {
       setIsDeleting(false);
     }
@@ -90,21 +91,40 @@ export default function DeleteConfirmModal({
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            {/* Warning Icon Badge */}
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center mb-4 shadow-xs">
-              <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" />
+            {/* Warning / Deleting Icon Badge */}
+            <div
+              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 transition-all ${
+                isDeleting
+                  ? "bg-rose-100 text-rose-600 ring-4 ring-rose-50"
+                  : "bg-rose-50 border border-rose-100 text-rose-600 shadow-xs"
+              }`}
+            >
+              {isDeleting ? (
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-rose-600" />
+              ) : (
+                <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" />
+              )}
             </div>
 
             {/* Heading & Details */}
             <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mb-2">
-              Delete {itemType}?
+              {isDeleting ? "Deleting from Cloud..." : `Delete ${itemType}?`}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5 sm:mb-6 break-words [overflow-wrap:anywhere]">
-              Are you sure you want to remove{" "}
-              <strong className="text-slate-950 font-bold break-words">
-                &ldquo;{title}&rdquo;
-              </strong>
-              ? This action will permanently remove it from your portfolio and cannot be undone.
+              {isDeleting ? (
+                <span className="text-rose-600 font-semibold flex items-center gap-1.5">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                  <span>Removing &ldquo;{title}&rdquo; permanently from cloud...</span>
+                </span>
+              ) : (
+                <>
+                  Are you sure you want to remove{" "}
+                  <strong className="text-slate-950 font-bold break-words">
+                    &ldquo;{title}&rdquo;
+                  </strong>
+                  ? This action will permanently remove it from your portfolio and cannot be undone.
+                </>
+              )}
             </p>
 
             {/* Action Buttons */}
