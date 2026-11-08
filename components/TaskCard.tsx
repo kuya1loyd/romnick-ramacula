@@ -33,6 +33,7 @@ export default function TaskCard({
 }: TaskCardProps) {
   return (
     <motion.div
+      data-task-card
       initial={{ opacity: 0, y: 25 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
@@ -42,11 +43,11 @@ export default function TaskCard({
         ease: [0.22, 1, 0.36, 1],
       }}
       whileHover={{
-        y: -10,
-        scale: 1.02,
+        y: -6,
+        scale: 1.015,
         transition: { duration: 0.2, ease: "easeOut" },
       }}
-      className={`relative shrink-0 w-[265px] min-[360px]:w-[285px] sm:w-[320px] md:w-[340px] h-[500px] sm:h-[560px] rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 border flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 ${task.cardColor.bg} ${task.cardColor.border}`}
+      className={`relative shrink-0 snap-center sm:snap-start w-[275px] min-[360px]:w-[295px] sm:w-[320px] md:w-[340px] h-[500px] sm:h-[560px] rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 border flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 ${task.cardColor.bg} ${task.cardColor.border}`}
     >
       {/* Top Preview Card (Showing Real Front Page Preview of Website & PDF) */}
       <div>

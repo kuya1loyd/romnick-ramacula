@@ -18,7 +18,11 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
 
   // Load tasks from cloud database API (with localStorage cache fallback)
   useEffect(() => {
@@ -114,10 +118,26 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
 
   const hoverScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleScroll = (direction: "left" | "right") => {
+  const scrollToIndex = (index: number) => {
+    const clampedIndex = Math.max(0, Math.min(index, filteredTasks.length - 1));
+    setActiveIndex(clampedIndex);
     if (scrollContainerRef.current) {
-      const scrollAmount = direction === "left" ? -360 : 360;
-      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+      const cards = scrollContainerRef.current.querySelectorAll<HTMLElement>("[data-task-card]");
+      if (cards[clampedIndex]) {
+        cards[clampedIndex].scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
+    }
+  };
+
+  const handleScroll = (direction: "left" | "right") => {
+    if (direction === "left") {
+      scrollToIndex(activeIndex - 1);
+    } else {
+      scrollToIndex(activeIndex + 1);
     }
   };
 
@@ -125,11 +145,8 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
     stopHoverScroll();
     handleScroll(direction);
     hoverScrollIntervalRef.current = setInterval(() => {
-      if (scrollContainerRef.current) {
-        const step = direction === "left" ? -360 : 360;
-        scrollContainerRef.current.scrollBy({ left: step, behavior: "smooth" });
-      }
-    }, 450);
+      handleScroll(direction);
+    }, 550);
   };
 
   const stopHoverScroll = () => {
@@ -142,6 +159,50 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
   useEffect(() => {
     return () => stopHoverScroll();
   }, []);
+
+  // Touch Swipe handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+
+    // Trigger swipe if horizontal movement is dominant and > 35px
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 35) {
+      if (deltaX < 0) {
+        scrollToIndex(activeIndex + 1);
+      } else {
+        scrollToIndex(activeIndex - 1);
+      }
+    }
+  };
+
+  // Keep active index in sync during scrolling
+  const handleScrollUpdate = () => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const cards = container.querySelectorAll<HTMLElement>("[data-task-card]");
+      if (cards.length === 0) return;
+      const containerCenter = container.scrollLeft + container.clientWidth / 2;
+      let closestIdx = 0;
+      let minDistance = Infinity;
+      cards.forEach((card, idx) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(containerCenter - cardCenter);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestIdx = idx;
+        }
+      });
+      setActiveIndex(closestIdx);
+    }
+  };
 
   return (
     <section id="my-tasks" className="py-24 relative overflow-hidden bg-transparent border-t border-slate-200">
@@ -209,7 +270,10 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
             {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  setActiveIndex(0);
+                }}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   selectedCategory === cat
                     ? "bg-slate-900 text-white shadow-sm"
@@ -228,33 +292,34 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setActiveIndex(0);
+                }}
                 placeholder="Search tasks..."
                 className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white border border-slate-200 focus:border-slate-400 focus:outline-none text-xs text-slate-800 placeholder-slate-400 shadow-xs"
               />
             </div>
 
-            {/* Slider Navigation Buttons (Click or Hover to advance next) */}
+            {/* Slider Navigation Buttons */}
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => handleScroll("left")}
-                onMouseEnter={() => startHoverScroll("left")}
-                onMouseLeave={stopHoverScroll}
-                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-900 hover:text-white text-slate-700 shadow-xs transition-colors cursor-pointer"
-                aria-label="Scroll left (hover to scroll)"
-                title="Hover or click to scroll previous"
+                disabled={activeIndex <= 0}
+                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-900 hover:text-white text-slate-700 disabled:opacity-40 disabled:pointer-events-none shadow-xs transition-colors cursor-pointer"
+                aria-label="Previous card"
+                title="Scroll to previous task"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => handleScroll("right")}
-                onMouseEnter={() => startHoverScroll("right")}
-                onMouseLeave={stopHoverScroll}
-                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-900 hover:text-white text-slate-700 shadow-xs transition-colors cursor-pointer"
-                aria-label="Scroll right (hover to scroll)"
-                title="Hover or click to scroll next"
+                disabled={activeIndex >= filteredTasks.length - 1}
+                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-900 hover:text-white text-slate-700 disabled:opacity-40 disabled:pointer-events-none shadow-xs transition-colors cursor-pointer"
+                aria-label="Next card"
+                title="Scroll to next task"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -262,41 +327,45 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
           </div>
         </div>
 
-        {/* Horizontal Carousel with ZERO overlapping & Hover-to-Next side controls */}
+        {/* Horizontal Carousel with Touch Swiping & Side Navigation */}
         <div className="relative group/deck">
-          {/* Floating Left Side Arrow (Hover or click to slide next) */}
+          {/* Floating Left Side Arrow (Visible on both mobile & desktop) */}
           <button
             type="button"
-            onClick={() => handleScroll("left")}
-            onMouseEnter={() => startHoverScroll("left")}
-            onMouseLeave={stopHoverScroll}
-            className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 hover:bg-slate-900 hover:text-white text-slate-800 shadow-xl border border-slate-200 backdrop-blur-md items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer opacity-80 hover:opacity-100"
-            aria-label="Previous card (hover to scroll)"
-            title="Hover or click to scroll previous"
+            onClick={() => scrollToIndex(activeIndex - 1)}
+            disabled={activeIndex <= 0}
+            className="flex absolute left-0.5 sm:-left-4 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-slate-900 hover:text-white text-slate-800 shadow-xl border border-slate-200 backdrop-blur-md items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-0 disabled:pointer-events-none cursor-pointer"
+            aria-label="Previous card"
+            title="Previous task"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
 
-          {/* Floating Right Side Arrow (Hover or click to slide next) */}
+          {/* Floating Right Side Arrow (Visible on both mobile & desktop) */}
           <button
             type="button"
-            onClick={() => handleScroll("right")}
-            onMouseEnter={() => startHoverScroll("right")}
-            onMouseLeave={stopHoverScroll}
-            className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 hover:bg-slate-900 hover:text-white text-slate-800 shadow-xl border border-slate-200 backdrop-blur-md items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer opacity-80 hover:opacity-100"
-            aria-label="Next card (hover to scroll)"
-            title="Hover or click to scroll next"
+            onClick={() => scrollToIndex(activeIndex + 1)}
+            disabled={activeIndex >= filteredTasks.length - 1}
+            className="flex absolute right-0.5 sm:-right-4 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-slate-900 hover:text-white text-slate-800 shadow-xl border border-slate-200 backdrop-blur-md items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-0 disabled:pointer-events-none cursor-pointer"
+            aria-label="Next card"
+            title="Next task"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
 
           <div
             ref={scrollContainerRef}
-            className="relative w-full overflow-x-auto pb-10 pt-4 px-2 sm:px-6 scroll-smooth"
-            style={{ scrollbarWidth: "none" }}
+            onScroll={handleScrollUpdate}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="relative w-full overflow-x-auto pb-8 pt-3 px-3 sm:px-6 scroll-smooth snap-x snap-mandatory touch-pan-x select-none"
+            style={{
+              scrollbarWidth: "none",
+              WebkitOverflowScrolling: "touch",
+            }}
           >
             {filteredTasks.length > 0 ? (
-              /* Non-overlapping clean card layout with proper gap */
+              /* Non-overlapping clean card layout with scroll snap */
               <div className="flex items-stretch justify-start min-w-max px-2 sm:px-4 gap-4 sm:gap-6">
                 {filteredTasks.map((task, index) => (
                   <TaskCard
@@ -321,7 +390,7 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
                     setSearchQuery("");
                     setSelectedCategory("All");
                   }}
-                  className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold cursor-pointer"
                 >
                   Reset Filters
                 </button>
@@ -330,10 +399,29 @@ export default function TasksSection({ onViewPdf }: TasksSectionProps) {
           </div>
         </div>
 
-        {/* Quick hint for interaction */}
-        <div className="text-center text-xs text-slate-400 mt-2 flex items-center justify-center gap-1.5">
-          <span>&larr; Hover over arrows to continuously scroll next &rarr;</span>
-        </div>
+        {/* Mobile Navigation Dots & Swipe Helper */}
+        {filteredTasks.length > 1 && (
+          <div className="flex flex-col items-center justify-center gap-2 mt-2 select-none">
+            <div className="flex items-center gap-2">
+              {filteredTasks.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => scrollToIndex(idx)}
+                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                    activeIndex === idx
+                      ? "w-8 bg-slate-900 shadow-xs"
+                      : "w-2 bg-slate-300 hover:bg-slate-400"
+                  }`}
+                  aria-label={`Go to task ${idx + 1}`}
+                />
+              ))}
+            </div>
+            <div className="text-center text-[11px] sm:text-xs text-slate-500 font-medium flex items-center justify-center gap-1.5">
+              <span>Swipe left/right or tap arrows to view tasks ({activeIndex + 1} of {filteredTasks.length})</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Upload Task Modal */}
